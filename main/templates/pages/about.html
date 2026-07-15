@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/about.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Who We Are</span>
+    <h1>Hamari Pehchaan</h1>
+    <p>Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha jo shiksha, kala aur ekta ke madhyam se kaam karti hai.</p>
+  </div>
+</section>
+
+<section class="committee-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">Leadership</span>
+      <h2>Management Committee</h2>
+      <p>Hamare anubhavi aur samarpit netritva team.</p>
+    </div>
+
+    <div class="members-grid">
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m1.jpg' %}" alt="Awadhesh Kumar">
+        <h3>अवधेश कुमार</h3>
+        <span class="member-role">अध्यक्ष</span>
+        <p class="member-profession">समाजसेवी</p>
+        <a href="tel:9839882438" class="member-phone">📞 9839882438</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m2.jpg' %}" alt="Anil Kumar Prajapati">
+        <h3>अनिल कुमार प्रजापति</h3>
+        <span class="member-role">उपाध्यक्ष</span>
+        <p class="member-profession">वकील</p>
+        <a href="tel:9455540475" class="member-phone">📞 9455540475</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m3.jpg' %}" alt="Ashish Prajapati">
+        <h3>आशीष प्रजापति</h3>
+        <span class="member-role">उपाध्यक्ष</span>
+        <p class="member-profession">समाजसेवी</p>
+        <a href="tel:9721504635" class="member-phone">📞 9721504635</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m4.jpg' %}" alt="Rohit">
+        <h3>रोहित</h3>
+        <span class="member-role">सचिव</span>
+        <p class="member-profession">समाजसेवी</p>
+        <a href="tel:9119817043" class="member-phone">📞 9119817043</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m5.jpg' %}" alt="Virendra Prajapati">
+        <h3>वीरेन्द्र प्रजापति</h3>
+        <span class="member-role">कोषाध्यक्ष</span>
+        <p class="member-profession">व्यापार</p>
+        <a href="tel:9807350691" class="member-phone">📞 9807350691</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m6.jpg' %}" alt="Satish Chandra">
+        <h3>सतीश चन्द्र</h3>
+        <span class="member-role">संगठन मंत्री</span>
+        <p class="member-profession">कृषि</p>
+        <a href="tel:9450069226" class="member-phone">📞 9450069226</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m7.jpg' %}" alt="Lala Ji">
+        <h3>लाला जी</h3>
+        <span class="member-role">प्रचार मंत्री</span>
+        <p class="member-profession">व्यापार</p>
+        <a href="tel:7565912155" class="member-phone">📞 7565912155</a>
+      </div>
+
+      <div class="member-card reveal">
+        <img src="{% static 'assets/images/members/m8.jpg' %}" alt="Akhil Kumar">
+        <h3>अखिल कुमार</h3>
+        <span class="member-role">विधिक सलाहकार</span>
+        <p class="member-profession">वकालत</p>
+        <a href="tel:9839934670" class="member-phone">📞 9839934670</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="volunteers-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">Community Heroes</span>
+      <h2>Hamare Volunteers</h2>
+      <p>Woh log jo apna waqt aur mehnat dete hain samaj ke liye.</p>
+    </div>
+
+    <div class="volunteer-grid">
+      {% for v in volunteers %}
+      <div class="volunteer-card reveal">
+        <img src="{{ v.photo.url }}" alt="{{ v.name }}">
+        <h4>{{ v.name }}</h4>
+        <p class="v-city">📍 {{ v.city }}</p>
+        <span class="v-contribution">{{ v.contribution|truncatechars:30 }}</span>
+      </div>
+      {% empty %}
+      <p class="no-volunteer">Abhi koi volunteer approved nahi hai. <a href="{% url 'join' %}" style="color:var(--green-600);font-weight:600">Pehle banein →</a></p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

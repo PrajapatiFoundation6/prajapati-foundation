@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1B4332">
+<meta name="description" content="Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha. Education, art preservation aur community programs.">
+<title>{% block title %}Prajapati Foundation{% endblock %}</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+{% block extra_css %}{% endblock %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+</head>
+<body>
+
+{% include 'components/navbar.html' %}
+
+{% if messages %}
+<div class="container">
+  {% for message in messages %}
+  <div class="alert-banner {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<main id="main-content">
+  {% block content %}{% endblock %}
+</main>
+
+{% include 'components/footer.html' %}
+
+<script src="{% static 'assets/js/navbar.js' %}" defer></script>
+<script src="{% static 'assets/js/animation.js' %}" defer></script>
+
+<script>
+(function(){
+  var els = document.querySelectorAll('.reveal');
+  if(!els.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, {threshold:0.12});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

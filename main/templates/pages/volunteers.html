@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Our Volunteers | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/about.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Community Heroes</span>
+    <h1>Hamare Volunteers</h1>
+    <p>Woh log jo apna waqt aur mehnat dete hain samaj ke liye.</p>
+  </div>
+</section>
+
+<section class="volunteers-section">
+  <div class="container">
+    <div class="volunteer-grid">
+      {% for v in volunteers %}
+      <div class="volunteer-card reveal">
+        <img src="{{ v.photo.url }}" alt="{{ v.name }}">
+        <h4>{{ v.name }}</h4>
+        <p class="v-city">📍 {{ v.city }}</p>
+        <span class="v-contribution">{{ v.contribution|truncatechars:30 }}</span>
+      </div>
+      {% empty %}
+      <p class="no-volunteer">Abhi koi volunteer approved nahi hai. <a href="{% url 'join' %}" style="color:var(--green-600);font-weight:600">Pehle banein →</a></p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

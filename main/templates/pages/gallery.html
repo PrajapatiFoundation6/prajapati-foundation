@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Gallery | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/gallery.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Our Moments</span>
+    <h1>Gallery</h1>
+    <p>Community activities, events aur Prajapati Foundation ke special moments.</p>
+  </div>
+</section>
+
+<section class="gallery-section">
+  <div class="container">
+
+    {% if images %}
+    <div class="gallery-grid" id="galleryGrid">
+      {% for img in images %}
+      <div class="gallery-card reveal"
+           data-src="{{ img.image.url }}"
+           data-title="{{ img.title }}"
+           role="button"
+           tabindex="0"
+           aria-label="View {{ img.title }}">
+
+        <img src="{{ img.image.url }}" alt="{{ img.title }}" loading="lazy">
+
+        <div class="gallery-overlay">
+          <h4>{{ img.title }}</h4>
+          <div class="gallery-overlay-btns">
+            <a href="{{ img.image.url }}" target="_blank" class="view-btn" onclick="event.stopPropagation()">👁 View</a>
+            <a href="{{ img.image.url }}" download="{{ img.title }}" class="download-btn" onclick="event.stopPropagation()">⬇ Save</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="gallery-empty">
+      <span class="empty-icon">📷</span>
+      <p>Abhi koi image upload nahi hui hai.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
+  <div class="lightbox-inner">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close">✕</button>
+    <img class="lightbox-img" id="lightboxImg" src="" alt="Gallery image">
+    <p class="lightbox-caption">Tap outside or press Esc to close</p>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  var lightbox = document.getElementById('lightbox');
+  var lbImg    = document.getElementById('lightboxImg');
+  var closeBtn = document.getElementById('lightboxClose');
+  if(!lightbox) return;
+
+  function openLightbox(src, title){
+    lbImg.src = src;
+    lbImg.alt = title || 'Gallery image';
+    lightbox.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox(){
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(function(){ lbImg.src = ''; }, 250);
+  }
+
+  document.querySelectorAll('.gallery-card').forEach(function(card){
+    card.addEventListener('click', function(e){
+      if(e.target.closest('.gallery-overlay-btns')) return;
+      openLightbox(card.dataset.src, card.dataset.title);
+    });
+    card.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){
+        e.preventDefault();
+        openLightbox(card.dataset.src, card.dataset.title);
+      }
+    });
+  });
+
+  closeBtn.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function(e){
+    if(e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox();
+  });
+
+  var startY = 0;
+  lbImg.addEventListener('touchstart', function(e){ startY = e.touches[0].clientY; }, {passive:true});
+  lbImg.addEventListener('touchend', function(e){
+    if(Math.abs(e.changedTouches[0].clientY - startY) > 80) closeLightbox();
+  }, {passive:true});
+})();
+</script>
+{% endblock %}

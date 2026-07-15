@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/contact.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Get In Touch</span>
+    <h1>Humse Sampark Karein</h1>
+    <p>Koi bhi sawaal, sujhaav ya madad ke liye hum hamesha available hain.</p>
+  </div>
+</section>
+
+<section class="contact-section">
+  <div class="container">
+    <div class="contact-layout">
+
+      <div class="contact-info-cards reveal">
+        <div class="contact-info-card">
+          <div class="cic-icon">🎓</div>
+          <div class="cic-body"><h4>Student Support</h4><p>Education, scholarship aur career planning ke liye guidance.</p></div>
+        </div>
+        <div class="contact-info-card">
+          <div class="cic-icon">🏡</div>
+          <div class="cic-body"><h4>Community Programs</h4><p>Samajik development initiatives mein participate karein.</p></div>
+        </div>
+        <div class="contact-info-card">
+          <div class="cic-icon">🤝</div>
+          <div class="cic-body"><h4>Volunteer Opportunities</h4><p>Join Prajapati Foundation aur contribute to society.</p></div>
+        </div>
+        <div class="contact-info-card">
+          <div class="cic-icon">📞</div>
+          <div class="cic-body"><h4>Direct Contact</h4><p>Awadhesh Kumar — <a href="tel:9839882438" style="color:var(--green-700);font-weight:600">9839882438</a></p></div>
+        </div>
+      </div>
+
+      <div class="contact-form-card reveal">
+        <img src="{% static 'assets/images/logo.png' %}" class="form-logo" alt="Logo">
+        <h2>Sandesh Bhejein</h2>
+
+        <form method="POST" class="contact-form" autocomplete="on" novalidate>
+          {% csrf_token %}
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.name.id_for_label }}">Full Name *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<p class="field-error-msg">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.phone.id_for_label }}">Phone *</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<p class="field-error-msg">{{ form.phone.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<p class="field-error-msg">{{ form.email.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.subject.id_for_label }}">Subject *</label>
+            {{ form.subject }}
+            {% if form.subject.errors %}<p class="field-error-msg">{{ form.subject.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.message.id_for_label }}">Message *</label>
+            {{ form.message }}
+            {% if form.message.errors %}<p class="field-error-msg">{{ form.message.errors.0 }}</p>{% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Send Message ✉️</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="social-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">Follow Us</span>
+      <h2>Hamare Saath Judein</h2>
+    </div>
+    <div class="social-grid reveal">
+      <a href="mailto:info@prajapatifoundation.org" class="social-card sc-mail"><span class="s-icon">✉️</span><span>Email</span></a>
+      <a href="https://instagram.com" target="_blank" rel="noopener" class="social-card sc-instagram"><span class="s-icon">📸</span><span>Instagram</span></a>
+      <a href="https://facebook.com" target="_blank" rel="noopener" class="social-card sc-facebook"><span class="s-icon">👥</span><span>Facebook</span></a>
+      <a href="https://wa.me/919839882438" target="_blank" rel="noopener" class="social-card sc-whatsapp"><span class="s-icon">💬</span><span>WhatsApp</span></a>
+    </div>
+  </div>
+</section>
+
+{% if messages and not form.errors %}
+<div class="contact-popup" id="contactPopup">
+  <div class="success-box">
+    <div class="popup-icon">✅</div>
+    <h3>Message Bhej Diya!</h3>
+    <p>Aapka sandesh humein mil gaya. Hum jald hi aapse sampark karenge.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('contactPopup').style.display='none'">OK</button>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

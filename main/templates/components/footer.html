@@ -1,0 +1,52 @@
+{% load static %}
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+
+      <div class="footer-brand">
+        <a href="{% url 'home' %}" class="logo">
+          <img src="{% static 'assets/images/logo.png' %}" alt="Prajapati Foundation Logo">
+          <span>Prajapati Foundation</span>
+        </a>
+        <p>Kumhar samaj ke utthan ke liye samarpit ek sanstha — shiksha, kala aur samajik ekta ke madhyam se.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="{% url 'home' %}">Home</a></li>
+          <li><a href="{% url 'about' %}">About Us</a></li>
+          <li><a href="{% url 'gallery' %}">Gallery</a></li>
+          <li><a href="{% url 'news' %}">News</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Programs</h4>
+        <ul>
+          <li><a href="{% url 'education' %}">Education Support</a></li>
+          <li><a href="{% url 'join' %}">Volunteer</a></li>
+          <li><a href="{% url 'donation' %}">Donate</a></li>
+          <li><a href="{% url 'contact' %}">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="https://wa.me/919839882438" target="_blank" rel="noopener">📱 WhatsApp</a></li>
+          <li><a href="mailto:info@prajapatifoundation.org">✉️ Email</a></li>
+          <li><a href="https://instagram.com" target="_blank" rel="noopener">📸 Instagram</a></li>
+          <li><a href="https://facebook.com" target="_blank" rel="noopener">👥 Facebook</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 Prajapati Foundation. All rights reserved.</p>
+      <p>Made with 💚 for the community</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,93 @@
+.edu-section{ padding:90px 0; }
+
+.edu-cards-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+}
+
+.edu-card{
+  background:#fff;
+  border-radius:var(--radius-md);
+  padding:30px 24px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--border);
+  transition:transform .3s ease, box-shadow .3s ease;
+}
+.edu-card:hover{ transform:translateY(-8px); box-shadow:var(--shadow-md); }
+
+.ec-icon{
+  width:54px; height:54px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:16px;
+  background:var(--bg-soft);
+  font-size:26px;
+  margin-bottom:16px;
+}
+
+.edu-card h3{ font-size:18px; margin-bottom:8px; }
+.edu-card p{ font-size:14.5px; }
+
+@media (max-width:900px){ .edu-cards-grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:560px){ .edu-cards-grid{ grid-template-columns:1fr; } }
+
+/* ---- Form section ---- */
+.edu-form-section{ padding:0 0 100px; }
+
+.edu-form-layout{
+  display:grid;
+  grid-template-columns:0.9fr 1.1fr;
+  gap:32px;
+  align-items:stretch;
+}
+
+.edu-side{
+  background:linear-gradient(150deg,var(--green-700),var(--green-500));
+  color:#fff;
+  border-radius:var(--radius-lg);
+  padding:40px 34px;
+  position:relative;
+  overflow:hidden;
+}
+.edu-side::after{
+  content:"";
+  position:absolute;
+  width:220px; height:220px;
+  right:-60px; top:-60px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+}
+
+.edu-form-logo{
+  width:60px; height:60px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.15);
+  padding:8px;
+  margin-bottom:18px;
+}
+
+.edu-side h2{ color:#fff; font-size:26px; }
+.edu-side p{ color:rgba(255,255,255,0.9); font-size:14.5px; margin-bottom:22px; }
+
+.mini-points{ display:grid; gap:10px; position:relative; z-index:1; }
+.mini-point{
+  padding:12px 14px;
+  border-radius:12px;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.16);
+  font-size:13.5px;
+}
+
+.edu-form-card{
+  background:#fff;
+  border-radius:var(--radius-lg);
+  padding:36px;
+  box-shadow:var(--shadow-sm);
+  border:1px solid var(--border);
+}
+.edu-form-card h3{ margin-bottom:18px; }
+.edu-form-inner{ display:flex; flex-direction:column; gap:4px; }
+
+@media (max-width:900px){
+  .edu-form-layout{ grid-template-columns:1fr; }
+}

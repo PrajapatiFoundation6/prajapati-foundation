@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Donate | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/donation.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Support Us</span>
+    <h1>Apna Yogdaan Dein 💚</h1>
+    <p>Aapka chhota sa contribution bahut bada badlaav la sakta hai.</p>
+  </div>
+</section>
+
+<section class="donation-section">
+  <div class="container">
+
+    <div class="donation-thanks" id="donationThanks">
+      🎉 Shukriya! Aapka donation safaltapoorvak mil gaya.
+    </div>
+
+    {% if not razorpay_key_id %}
+    <div class="alert-banner alert-error" style="margin:0 0 24px">
+      ⚠️ Razorpay keys configure nahi hui hain. Admin ko <code>.env</code> file mein
+      <code>RAZORPAY_KEY_ID</code> aur <code>RAZORPAY_KEY_SECRET</code> set karna hoga.
+    </div>
+    {% endif %}
+
+    <div class="donation-layout">
+
+      <div class="donation-form-card reveal">
+        <h2>Donation Karein</h2>
+        <p class="form-sub">100% secure · Razorpay powered</p>
+
+        <div class="don-input-row" style="margin-bottom:14px">
+          <div class="form-group">
+            <label class="form-label" for="donor_name">Aapka Naam *</label>
+            <input class="input-field" type="text" id="donor_name" placeholder="Full name" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="donor_email">Email</label>
+            <input class="input-field" type="email" id="donor_email" placeholder="Email" autocomplete="email" inputmode="email">
+          </div>
+        </div>
+
+        <p class="preset-label">Quick Amount Select</p>
+        <div class="preset-grid">
+          <button type="button" class="preset-btn" onclick="setAmount(501, this)">₹501</button>
+          <button type="button" class="preset-btn" onclick="setAmount(1100, this)">₹1100</button>
+          <button type="button" class="preset-btn" onclick="setAmount(2100, this)">₹2100</button>
+          <button type="button" class="preset-btn" onclick="setAmount(5100, this)">₹5100</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom:20px">
+          <label class="form-label" for="amount">Ya Custom Amount</label>
+          <div class="amount-wrap">
+            <span class="amount-prefix">₹</span>
+            <input class="input-field amount-input" type="number" id="amount" placeholder="0" inputmode="numeric" min="1">
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="payNowBtn" onclick="payNow()" {% if not razorpay_key_id %}disabled{% endif %}>
+          Donate Now 💚
+        </button>
+        <p style="font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px">
+          🔒 Secure payment via Razorpay — amount verified server-side
+        </p>
+      </div>
+
+      <div class="donation-info-card reveal">
+        <h3>Aapka Donation Kahan Jaata Hai</h3>
+
+        <div class="use-item">
+          <div class="use-icon">🎓</div>
+          <div class="use-body"><h4>Education Support</h4><p>Scholarship awareness, career guidance aur needy students ki madad.</p></div>
+        </div>
+        <div class="use-item">
+          <div class="use-icon">🏡</div>
+          <div class="use-body"><h4>Community Help</h4><p>Samaj ke zarooratmand logo ki aarthik aur samajik madad.</p></div>
+        </div>
+        <div class="use-item">
+          <div class="use-icon">🧱</div>
+          <div class="use-body"><h4>Artisan Support</h4><p>Kumhar artisans ko tools, training aur market access.</p></div>
+        </div>
+        <div class="use-item">
+          <div class="use-icon">❤️</div>
+          <div class="use-body"><h4>Emergency Relief</h4><p>Crisis situations mein immediate family support.</p></div>
+        </div>
+
+        <div class="trust-badges">
+          <div class="trust-badge"><div class="tb-num">100%</div><div class="tb-label">Transparent</div></div>
+          <div class="trust-badge"><div class="tb-num">4+</div><div class="tb-label">Impact areas</div></div>
+          <div class="trust-badge"><div class="tb-num">500+</div><div class="tb-label">Lives touched</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="donors-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">Our Donors</span>
+      <h2>Recent Supporters</h2>
+    </div>
+
+    <div class="donors-grid reveal">
+      {% for d in donors %}
+      <div class="donor-card">
+        <div class="donor-avatar">{{ d.name|first|upper }}</div>
+        <p>{{ d.name|truncatechars:14 }}</p>
+      </div>
+      {% empty %}
+      <p style="grid-column:1/-1;text-align:center;color:var(--ink-3);padding:30px 0;font-size:14px">
+        Pehle donor bano! 💚
+      </p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script src="{% static 'assets/js/donation.js' %}" defer></script>
+{% endblock %}

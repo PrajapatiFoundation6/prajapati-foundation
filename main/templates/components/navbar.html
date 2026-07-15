@@ -1,0 +1,47 @@
+{% load static %}
+
+<header class="navbar" id="navbar">
+  <div class="nav-container">
+
+    <a href="{% url 'home' %}" class="logo">
+      <img src="{% static 'assets/images/logo.png' %}" alt="Prajapati Foundation Logo">
+      <span>
+        Prajapati
+        <span class="logo-sub">Foundation</span>
+      </span>
+    </a>
+
+    <nav aria-label="Main navigation">
+      <ul class="nav-links" id="navLinks">
+        <li><a href="{% url 'home' %}"      class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">Home</a></li>
+        <li><a href="{% url 'about' %}"     class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">About</a></li>
+        <li><a href="{% url 'education' %}" class="{% if request.resolver_match.url_name == 'education' %}active{% endif %}">Education</a></li>
+        <li><a href="{% url 'gallery' %}"   class="{% if request.resolver_match.url_name == 'gallery' %}active{% endif %}">Gallery</a></li>
+        <li><a href="{% url 'news' %}"      class="{% if request.resolver_match.url_name == 'news' %}active{% endif %}">News</a></li>
+        <li><a href="{% url 'contact' %}"   class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">Contact</a></li>
+      </ul>
+    </nav>
+
+    <a href="{% url 'donation' %}" class="nav-donate">💚 Donate</a>
+
+  </div>
+</header>
+
+<!-- Mobile bottom tab bar (hidden on desktop via CSS) -->
+<nav class="bottom-nav" aria-label="Mobile navigation">
+  <a href="{% url 'home' %}"      class="bnav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+    <span class="bnav-icon">🏠</span><span>Home</span>
+  </a>
+  <a href="{% url 'education' %}" class="bnav-item {% if request.resolver_match.url_name == 'education' %}active{% endif %}">
+    <span class="bnav-icon">🎓</span><span>Education</span>
+  </a>
+  <a href="{% url 'donation' %}"  class="bnav-item {% if request.resolver_match.url_name == 'donation' %}active{% endif %}">
+    <span class="bnav-icon">💚</span><span>Donate</span>
+  </a>
+  <a href="{% url 'news' %}"      class="bnav-item {% if request.resolver_match.url_name == 'news' %}active{% endif %}">
+    <span class="bnav-icon">📰</span><span>News</span>
+  </a>
+  <a href="{% url 'contact' %}"   class="bnav-item {% if request.resolver_match.url_name == 'contact' %}active{% endif %}">
+    <span class="bnav-icon">☎️</span><span>Contact</span>
+  </a>
+</nav>

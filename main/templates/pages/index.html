@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Prajapati Foundation — Kumhar Samaj Ka Sahara{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <span>Shiksha Support</span>
+    <span>Kumhar Kala Sanrakshan</span>
+    <span>Samaj Seva</span>
+    <span>Volunteer Program</span>
+    <span>Community Events</span>
+    <span>Artisan Support</span>
+    <span>Scholarship Guidance</span>
+    <span>Shiksha Support</span>
+    <span>Kumhar Kala Sanrakshan</span>
+    <span>Samaj Seva</span>
+    <span>Volunteer Program</span>
+    <span>Community Events</span>
+    <span>Artisan Support</span>
+    <span>Scholarship Guidance</span>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="hero-slider">
+    {% for img in images %}
+    <div class="slide {% if forloop.first %}active{% endif %}" style="background-image:url('{{ img.image.url }}')"></div>
+    {% empty %}
+    <div class="slide active" style="background-image:url('{% static "assets/images/hero.jpg" %}')"></div>
+    {% endfor %}
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-eyebrow">Prajapati Foundation</div>
+    <h1>Ek Sangatit Samaj,<br>Ek Sashakt Bhavishya</h1>
+    <p class="hero-sub">
+      Shiksha, kala aur samajik ekta ke madhyam se Kumhar samaj ka utthan —
+      har parivaar ko ek behtar kal.
+    </p>
+
+    <div class="hero-actions">
+      <a href="{% url 'donation' %}" class="btn btn-amber">💚 Donate Now</a>
+      <a href="{% url 'join' %}" class="btn btn-ghost">Join Us →</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num">500+</div><div class="stat-label">Members</div></div>
+      <div class="stat-item"><div class="stat-num">4+</div><div class="stat-label">Programs</div></div>
+      <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Transparent</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="quick-actions">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">What We Do</span>
+      <h2>Hamare Karyakram</h2>
+      <p>Prajapati samaj ke upliftment ke liye hum yeh programs chalate hain.</p>
+    </div>
+
+    <div class="qa-grid">
+      <a href="{% url 'education' %}" class="qa-card reveal">
+        <div class="qa-icon">🎓</div><h3>Education Support</h3><p>Scholarship & career guidance</p>
+      </a>
+      <a href="{% url 'about' %}" class="qa-card reveal">
+        <div class="qa-icon">🏛️</div><h3>Community Programs</h3><p>Samajik utthan ke liye</p>
+      </a>
+      <a href="{% url 'gallery' %}" class="qa-card reveal">
+        <div class="qa-icon">🧱</div><h3>Artisan Support</h3><p>Kumhar kala sanrakshan</p>
+      </a>
+      <a href="{% url 'gallery' %}" class="qa-card reveal">
+        <div class="qa-icon">🎉</div><h3>Community Events</h3><p>Programs & celebrations</p>
+      </a>
+      <a href="{% url 'donation' %}" class="qa-card reveal">
+        <div class="qa-icon">💰</div><h3>Donations</h3><p>Support our mission</p>
+      </a>
+      <a href="{% url 'news' %}" class="qa-card reveal">
+        <div class="qa-icon">📰</div><h3>Latest News</h3><p>Community updates</p>
+      </a>
+      <a href="{% url 'join' %}" class="qa-card reveal">
+        <div class="qa-icon">🤝</div><h3>Volunteer</h3><p>Apna time dein</p>
+      </a>
+      <a href="{% url 'about' %}" class="qa-card reveal">
+        <div class="qa-icon">👥</div><h3>About Us</h3><p>Our team & mission</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="mission-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">Our Mission</span>
+      <h2>Hum Kyun Kaam Karte Hain</h2>
+    </div>
+
+    <div class="mission-grid">
+      <div class="mission-card reveal">
+        <div class="m-icon">📚</div>
+        <h3>Shiksha ka Adhikar</h3>
+        <p>Har bacche ko quality education milni chahiye, chahe background kuch bhi ho. Hum scholarship aur guidance dete hain.</p>
+      </div>
+      <div class="mission-card reveal">
+        <div class="m-icon">🏺</div>
+        <h3>Kala ka Sanrakshan</h3>
+        <p>Mitti kala aur Kumhar parampara ko zinda rakhna hamara dharm hai. Artisans ko market access aur support dete hain.</p>
+      </div>
+      <div class="mission-card reveal">
+        <div class="m-icon">🤝</div>
+        <h3>Samaj ki Ekta</h3>
+        <p>Ek sangatit samaj hi apni awaaz uthaa sakta hai. Community building aur events ke zariye hum jodte hain.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-strip">
+  <div class="container reveal">
+    <h2>Volunteer Bano, Badlaav Lao</h2>
+    <p>Apna time, skill ya donation dekar Prajapati Foundation ka hissa bano.</p>
+    <div class="cta-actions">
+      <a href="{% url 'join' %}" class="btn btn-amber">Join as Volunteer</a>
+      <a href="{% url 'donation' %}" class="btn btn-ghost">Donate Now</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/home.js' %}" defer></script>
+{% endblock %}

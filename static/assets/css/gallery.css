@@ -1,0 +1,88 @@
+.gallery-section{ padding:90px 0; }
+
+.gallery-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:22px;
+}
+
+.gallery-card{
+  position:relative;
+  border-radius:var(--radius-md);
+  overflow:hidden;
+  cursor:pointer;
+  box-shadow:var(--shadow-sm);
+  aspect-ratio:4/3;
+  background:var(--bg-soft);
+}
+
+.gallery-card img{
+  width:100%; height:100%;
+  object-fit:cover;
+  transition:transform .5s ease;
+}
+.gallery-card:hover img{ transform:scale(1.08); }
+
+.gallery-overlay{
+  position:absolute; inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:18px;
+  background:linear-gradient(to top, rgba(15,36,24,0.85), transparent 60%);
+  opacity:0;
+  transition:opacity .3s ease;
+}
+.gallery-card:hover .gallery-overlay{ opacity:1; }
+
+.gallery-overlay h4{ color:#fff; font-size:14.5px; margin-bottom:8px; }
+
+.gallery-overlay-btns{ display:flex; gap:8px; }
+.view-btn, .download-btn{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  text-decoration:none;
+  font-weight:600;
+}
+.view-btn{ background:#fff; color:var(--green-700); }
+.download-btn{ background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4); }
+
+.gallery-empty{
+  text-align:center;
+  padding:80px 20px;
+  color:var(--ink-3);
+}
+.empty-icon{ font-size:44px; display:block; margin-bottom:14px; }
+
+/* ---- Lightbox ---- */
+.lightbox{
+  position:fixed; inset:0;
+  background:rgba(8,16,12,0.92);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:4000;
+  padding:20px;
+}
+.lightbox.open{ display:flex; }
+
+.lightbox-inner{ position:relative; max-width:900px; width:100%; text-align:center; }
+.lightbox-img{ max-height:80vh; margin:0 auto; border-radius:14px; }
+.lightbox-caption{ color:rgba(255,255,255,0.6); font-size:13px; margin-top:14px; }
+
+.lightbox-close{
+  position:absolute; top:-46px; right:0;
+  width:38px; height:38px;
+  border-radius:50%;
+  border:none;
+  background:rgba(255,255,255,0.15);
+  color:#fff;
+  font-size:18px;
+  cursor:pointer;
+}
+.lightbox-close:hover{ background:rgba(255,255,255,0.28); }
+
+@media (max-width:560px){
+  .gallery-grid{ grid-template-columns:repeat(2,1fr); gap:12px; }
+}

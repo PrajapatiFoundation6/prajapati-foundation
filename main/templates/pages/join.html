@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Join Us | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/join.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Volunteer</span>
+    <h1>Hamare Saath Judein</h1>
+    <p>Prajapati Foundation ka hissa banein aur apne samaj ke liye kuch khaas karein.</p>
+  </div>
+</section>
+
+<section class="join-section">
+  <div class="container">
+    <div class="join-layout">
+
+      <div class="join-side reveal">
+        <img src="{% static 'assets/images/logo.png' %}" class="join-logo" alt="Logo">
+        <h2>Volunteer Kyun Banein?</h2>
+        <p>
+          Prajapati Foundation ek mission hai jo sirf tab safal hoga jab hamare samaj ke log
+          saath aakar apna yogdaan dein. Aapka har chhota kadam ek bada badlaav la sakta hai.
+        </p>
+        <div class="why-join">
+          <div class="why-item">
+            <span class="why-icon">🎓</span>
+            <div class="why-body"><h4>Students ki Madad Karein</h4><p>Apni knowledge se nayi peedhi ko guide karein.</p></div>
+          </div>
+          <div class="why-item">
+            <span class="why-icon">🏺</span>
+            <div class="why-body"><h4>Kala Sanrakshan</h4><p>Kumhar parampara ko zinda rakhne mein haath bataaein.</p></div>
+          </div>
+          <div class="why-item">
+            <span class="why-icon">🤝</span>
+            <div class="why-body"><h4>Community Building</h4><p>Events aur programs mein participate karke samaj jodein.</p></div>
+          </div>
+          <div class="why-item">
+            <span class="why-icon">💰</span>
+            <div class="why-body"><h4>Donation Drive</h4><p>Fundraising campaigns mein apna role nibhaaein.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="join-form-card reveal">
+        <h3>Application Form</h3>
+        <form method="POST" enctype="multipart/form-data" class="join-form" autocomplete="on" novalidate>
+          {% csrf_token %}
+
+          <div class="join-form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.name.id_for_label }}">Full Name *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<p class="field-error-msg">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.phone.id_for_label }}">Phone *</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<p class="field-error-msg">{{ form.phone.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="join-form-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+              {{ form.email }}
+              {% if form.email.errors %}<p class="field-error-msg">{{ form.email.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+              {{ form.city }}
+              {% if form.city.errors %}<p class="field-error-msg">{{ form.city.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.contribution.id_for_label }}">Aap Kaise Contribute Karna Chahte Hain? *</label>
+            {{ form.contribution }}
+            {% if form.contribution.errors %}<p class="field-error-msg">{{ form.contribution.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Photo Upload *</label>
+            <label class="photo-upload-area" for="{{ form.photo.id_for_label }}" id="photoLabel">
+              <div style="font-size:28px">📷</div>
+              <p class="photo-upload-hint">Tap to upload your photo</p>
+              {{ form.photo }}
+            </label>
+            <div class="photo-preview-wrap" id="previewWrap">
+              <img class="photo-preview" id="photoPreview" src="" alt="Preview">
+            </div>
+            {% if form.photo.errors %}<p class="field-error-msg">{{ form.photo.errors.0 }}</p>{% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Submit Application 🙌</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% if messages and not form.errors %}
+<div class="join-popup" id="joinPopup">
+  <div class="success-box">
+    <div class="popup-icon">🎉</div>
+    <h3>Application Submit Ho Gayi!</h3>
+    <p>Shukriya! Aapki application Prajapati Foundation ko mil gayi. Hum jald sampark karenge.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('joinPopup').style.display='none'">Dhanyavaad!</button>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  var input   = document.getElementById('{{ form.photo.id_for_label }}');
+  var preview = document.getElementById('photoPreview');
+  var wrap    = document.getElementById('previewWrap');
+  var label   = document.getElementById('photoLabel');
+  if(!input) return;
+
+  input.addEventListener('change', function(){
+    var file = this.files[0];
+    if(!file) return;
+    preview.src = URL.createObjectURL(file);
+    wrap.style.display  = 'flex';
+    label.style.display = 'none';
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+db.sqlite3
+/staticfiles/
+/media/*
+!/media/gallery/.gitkeep
+!/media/volunteers/.gitkeep
+.DS_Store
+*.log
+venv/
+env/

@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Education Support | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/education.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Education Support</span>
+    <h1>Padhna Hai, Badhna Hai</h1>
+    <p>Prajapati Foundation har student ko scholarship guidance, career direction aur mentorship deta hai.</p>
+    <div style="margin-top:20px">
+      <a href="#student-form" class="btn btn-amber">Madad Maangein ↓</a>
+    </div>
+  </div>
+</section>
+
+<section class="edu-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">How We Help</span>
+      <h2>Hum Kis Tarah Madad Karte Hain</h2>
+    </div>
+
+    <div class="edu-cards-grid">
+      <div class="edu-card reveal">
+        <div class="ec-icon">🎓</div>
+        <h3>Academic Guidance</h3>
+        <p>School ke baad, graduation ke baad kya karein — yeh confusion hum door karte hain. Sahi raah dikhate hain.</p>
+      </div>
+      <div class="edu-card reveal">
+        <div class="ec-icon">📘</div>
+        <h3>Career Awareness</h3>
+        <p>Courses, entrance exams, college choices, government opportunities — first-generation learners ke liye trusted platform.</p>
+      </div>
+      <div class="edu-card reveal">
+        <div class="ec-icon">💡</div>
+        <h3>Scholarship Help</h3>
+        <p>Kai deserving students sirf jaankari ke abhav mein scholarship miss kar dete hain. Hum woh gap fill karte hain.</p>
+      </div>
+      <div class="edu-card reveal">
+        <div class="ec-icon">🧭</div>
+        <h3>Mentorship</h3>
+        <p>Marks se zyada — direction, discipline aur mindset. Students ko isolated feel na ho, isliye hum unke saath hain.</p>
+      </div>
+      <div class="edu-card reveal">
+        <div class="ec-icon">🤝</div>
+        <h3>Needy Students Support</h3>
+        <p>Personal, financial ya family difficulties se affected students ke liye practical help aur emotional support.</p>
+      </div>
+      <div class="edu-card reveal">
+        <div class="ec-icon">🌱</div>
+        <h3>Long-term Vision</h3>
+        <p>Background future limit na kare — yeh hamara sapna hai. Ek support ecosystem jo approachable, respectful aur action-oriented ho.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="edu-form-section" id="student-form">
+  <div class="container">
+    <div class="edu-form-layout">
+
+      <div class="edu-side reveal">
+        <img src="{% static 'assets/images/logo.png' %}" class="edu-form-logo" alt="Logo">
+        <h2>Student Help Request Form</h2>
+        <p>
+          Agar aapko studies, scholarship, career guidance, exam preparation ya college selection mein
+          madad chahiye toh yeh form bharein. Hamari team aapse jald sampark karegi.
+        </p>
+        <div class="mini-points">
+          <div class="mini-point">✔ Scholarship guidance support</div>
+          <div class="mini-point">✔ Career aur course direction</div>
+          <div class="mini-point">✔ Zarooratmand students ke liye madad</div>
+          <div class="mini-point">✔ Trusted community guidance</div>
+        </div>
+      </div>
+
+      <div class="edu-form-card reveal">
+        <h3>Apni Request Bhejein</h3>
+        <form method="POST" class="edu-form-inner" autocomplete="on" novalidate>
+          {% csrf_token %}
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.name.id_for_label }}">Full Name *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<p class="field-error-msg">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.phone.id_for_label }}">Phone *</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<p class="field-error-msg">{{ form.phone.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+              {{ form.email }}
+              {% if form.email.errors %}<p class="field-error-msg">{{ form.email.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.city.id_for_label }}">City *</label>
+              {{ form.city }}
+              {% if form.city.errors %}<p class="field-error-msg">{{ form.city.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.education_level.id_for_label }}">Education Level *</label>
+            {{ form.education_level }}
+            {% if form.education_level.errors %}<p class="field-error-msg">{{ form.education_level.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.help_type.id_for_label }}">Type of Help Needed *</label>
+            {{ form.help_type }}
+            {% if form.help_type.errors %}<p class="field-error-msg">{{ form.help_type.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.message.id_for_label }}">Apni Baat Likhein *</label>
+            {{ form.message }}
+            {% if form.message.errors %}<p class="field-error-msg">{{ form.message.errors.0 }}</p>{% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Submit Request 🎓</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+{% if messages and not form.errors %}
+<div class="success-popup" id="successPopup">
+  <div class="success-box">
+    <div class="popup-icon">✅</div>
+    <h3>Request Submit Ho Gayi!</h3>
+    <p>Aapki education help request humein mil gayi. Hamari team jald aapse sampark karegi.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('successPopup').style.display='none'">OK, Shukriya!</button>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
