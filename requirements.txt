@@ -1,9 +1,11 @@
-Django>=5.0,<6.1
-feedparser>=6.0.11
-beautifulsoup4>=4.12.3
-requests>=2.32.0
-Pillow>=10.4.0
-
-# Cloudflare R2 (S3-compatible) media storage — optional, only needed
-# if USE_R2_STORAGE=True in .env
-django-storages[s3]>=1.14.4
+Django==6.0.3
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+python-decouple
+django-storages[s3]
+feedparser
+requests
+beautifulsoup4
+razorpay
