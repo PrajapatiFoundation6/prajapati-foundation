@@ -93,7 +93,7 @@ class Donation(models.Model):
 
 class News(models.Model):
 
-    title = models.CharField(max_length=300)
+    title = models.CharField(max_length=800)
     description = models.TextField(blank=True)
     image = models.URLField(blank=True)
     source_link = models.URLField(unique=True)
