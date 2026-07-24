@@ -96,7 +96,7 @@ class News(models.Model):
     title = models.CharField(max_length=800)
     description = models.TextField(blank=True)
     image = models.URLField(blank=True)
-    source_link = models.URLField(unique=True)
+    source_link = models.URLField(unique=True,max_length=800)
     category = models.CharField(max_length=100, blank=True, db_index=True)
     published_date = models.DateTimeField(db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
