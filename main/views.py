@@ -5,13 +5,15 @@ import json
 import logging
 import threading
 import time
+import os
+
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
 from .forms import ContactForm, StudentHelpForm, VolunteerForm
 from .models import Donation, GalleryImage, News, Volunteer
@@ -281,3 +283,13 @@ def news(request):
         "categories": categories,
         "active_category": category,
     })
+@require_GET
+def cron_fetch_news(request):
+    secret = request.GET.get("key", "")
+    if secret != os.environ.get("CRON_SECRET", ""):
+        return JsonResponse({"ok": False, "error": "Unauthorized"}, status=403)
+
+    from . import news_fetcher
+    stats = news_fetcher.fetch_news()
+    return JsonResponse({"ok": True, "stats": stats})
+    

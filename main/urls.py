@@ -16,4 +16,5 @@ urlpatterns = [
     path('donation/', views.donation, name='donation'),
     path('donation/create-order/', views.donation_create_order, name='donation_create_order'),
     path('donation/save/', views.donation_save, name='donation_save'),
+    path('cron/fetch-news/', views.cron_fetch_news, name='cron_fetch_news'),
 ]
