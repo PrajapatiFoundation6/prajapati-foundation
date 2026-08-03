@@ -5,6 +5,7 @@ Fetches India-focused news about:
   • Prajapati / Kumhar samaj
   • Mitti kala / pottery
   • Kumhar community events
+  • Raebareli (NGO's home district) — Prajapati/Kumhar samaj news specifically
 
 Used by:
   - main.views.news()  -> triggers a background fetch if data looks stale
@@ -17,18 +18,42 @@ Design notes:
     even when fetching 20-30 articles.
   - Duplicate articles (same source_link) are skipped via a DB uniqueness
     check before hitting the network for images.
+
+IMAGE FIX (why the old version showed Google's logo / no photo at all):
+  Google News RSS `link` fields are encrypted redirect URLs
+  (news.google.com/rss/articles/...). Since Google's 2024 encoding change, a
+  plain requests.get() can no longer follow these to the real article — it
+  either lands on a Google page (og:image = Google's own logo) or just fails.
+  Fix, in order of preference:
+    1. Use `googlenewsdecoder` to resolve the REAL publisher URL from the
+       encrypted redirect link (pip install googlenewsdecoder).
+    2. If the RSS <description> HTML already embeds a real (non-Google)
+       thumbnail, prefer that — it's free, no extra network call.
+    3. Fetch the real publisher URL and read its og:image / twitter:image.
+    4. If anything resolves back to a google.com/gstatic.com domain, treat
+       it as "no image found" (emoji fallback) instead of showing Google's
+       branding.
 """
 
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+from urllib.parse import quote, urlparse
 
 import feedparser
 import requests
 from bs4 import BeautifulSoup
 
 from .models import News
+
+try:
+    from googlenewsdecoder import gnewsdecoder as _gnews_decode
+except ImportError:
+    try:
+        from googlenewsdecoder import new_decoderv1 as _gnews_decode
+    except ImportError:
+        _gnews_decode = None  # library not installed — decoding step will be skipped
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +69,17 @@ HEADERS = {
 }
 
 REQUEST_TIMEOUT = 6  # seconds
+
+# Domains that indicate we're still on Google's own site — fetching these
+# would only ever give us Google's own logo/branding, never the real
+# article's image.
+GOOGLE_DOMAINS = ("google.com", "gstatic.com", "googleusercontent.com")
+
+
+def _google_news_rss(query: str, hl: str = "hi", gl: str = "IN", ceid: str = "IN:hi") -> str:
+    """Build a Google News RSS search URL safely (auto URL-encodes the query)."""
+    return f"https://news.google.com/rss/search?q={quote(query)}&hl={hl}&gl={gl}&ceid={ceid}"
+
 
 # Google News RSS — India, Hindi (ceid=IN:hi)
 RSS_SOURCES = [
@@ -77,6 +113,28 @@ RSS_SOURCES = [
         "category": "प्रजापति समाज",
         "limit": 8,
     },
+
+    # ---- Raebareli + Prajapati/Kumhar samaj (NGO's home district) ----
+    {
+        "url": _google_news_rss("रायबरेली प्रजापति समाज"),
+        "category": "रायबरेली प्रजापति समाज",
+        "limit": 12,
+    },
+    {
+        "url": _google_news_rss("रायबरेली कुम्हार समाज"),
+        "category": "रायबरेली कुम्हार समाज",
+        "limit": 10,
+    },
+    {
+        "url": _google_news_rss("site:bhaskar.com रायबरेली प्रजापति"),
+        "category": "रायबरेली प्रजापति समाज (दैनिक भास्कर)",
+        "limit": 10,
+    },
+    {
+        "url": _google_news_rss("site:bhaskar.com रायबरेली कुम्हार"),
+        "category": "रायबरेली कुम्हार समाज (दैनिक भास्कर)",
+        "limit": 10,
+    },
 ]
 
 RELEVANT_KEYWORDS = [
@@ -101,6 +159,52 @@ def _clean_html(text: str) -> str:
     return WHITESPACE_RE.sub(" ", text).strip()
 
 
+def _is_google_domain(url: str) -> bool:
+    if not url:
+        return False
+    host = urlparse(url).netloc.lower()
+    return any(host == d or host.endswith("." + d) for d in GOOGLE_DOMAINS)
+
+
+def _extract_rss_thumbnail(summary_html: str) -> str:
+    """
+    Some Google News RSS <description> blocks embed a small <img>. Use it
+    only if it's NOT hosted on a Google domain (otherwise it's just
+    Google's branding, not the real article's thumbnail).
+    """
+    if not summary_html:
+        return ""
+    try:
+        soup = BeautifulSoup(summary_html, "html.parser")
+        img = soup.find("img", src=True)
+        if img and img["src"].startswith("http") and not _is_google_domain(img["src"]):
+            return img["src"]
+    except Exception:
+        logger.debug("RSS thumbnail parse failed", exc_info=True)
+    return ""
+
+
+def _decode_google_news_url(url: str) -> str:
+    """
+    Google News RSS links are encrypted redirects (news.google.com/rss/articles/...).
+    Since Google's 2024 encoding change, a plain requests.get() can no longer
+    follow these to the real article — this resolves the actual publisher URL
+    so we can fetch the real og:image (and link users straight to the article
+    instead of through Google). Falls back to the original Google URL if
+    decoding fails for any reason (rate-limited, network issue, library not
+    installed, etc.) — never raises.
+    """
+    if _gnews_decode is None:
+        return url
+    try:
+        result = _gnews_decode(url, interval=1)
+        if isinstance(result, dict) and result.get("status") and result.get("decoded_url"):
+            return result["decoded_url"]
+    except Exception:
+        logger.debug("Google News URL decode failed for %s", url, exc_info=True)
+    return url
+
+
 def _extract_image(url: str) -> str:
     """Best-effort og:image / twitter:image / first-large-<img> extraction."""
     try:
@@ -108,19 +212,25 @@ def _extract_image(url: str) -> str:
         if resp.status_code != 200:
             return FALLBACK_IMAGE
 
+        # If we're still on a google.com/gstatic.com page, the redirect never
+        # actually reached the publisher — og:image here would just be
+        # Google's own logo. Bail out to the emoji fallback instead.
+        if _is_google_domain(resp.url):
+            return FALLBACK_IMAGE
+
         soup = BeautifulSoup(resp.text, "html.parser")
 
         og = soup.find("meta", property="og:image")
-        if og and og.get("content", "").startswith("http"):
+        if og and og.get("content", "").startswith("http") and not _is_google_domain(og["content"]):
             return og["content"]
 
         tw = soup.find("meta", attrs={"name": "twitter:image"})
-        if tw and tw.get("content", "").startswith("http"):
+        if tw and tw.get("content", "").startswith("http") and not _is_google_domain(tw["content"]):
             return tw["content"]
 
         for img in soup.find_all("img", src=True):
             src = img["src"]
-            if not src.startswith("http"):
+            if not src.startswith("http") or _is_google_domain(src):
                 continue
             width = img.get("width", "0")
             try:
@@ -165,13 +275,15 @@ def _process_entry(entry, category: str, existing_links: set):
         "desc": desc,
         "category": category,
         "date": _parse_date(entry),
+        "rss_thumb": _extract_rss_thumbnail(entry.get("summary", "")),
     }
 
 
 def fetch_news(max_workers: int = 8) -> dict:
     """
-    Fetch fresh news from all configured RSS sources, extract images
-    concurrently, and save new (non-duplicate, relevant) articles.
+    Fetch fresh news from all configured RSS sources, resolve real article
+    URLs + extract images concurrently, and save new (non-duplicate,
+    relevant) articles.
 
     Returns: {"added": int, "skipped": int, "errors": int}
     """
@@ -199,10 +311,19 @@ def fetch_news(max_workers: int = 8) -> dict:
         logger.info("fetch_news: no new relevant entries found.")
         return stats
 
-    logger.info("fetch_news: fetching images for %d new articles...", len(pending))
+    logger.info("fetch_news: resolving links + fetching images for %d new articles...", len(pending))
 
     def _with_image(item):
-        item["image"] = _extract_image(item["link"])
+        # Resolve the real publisher URL first — needed both for a correct
+        # og:image AND so "read full article" links go straight to the
+        # publisher instead of through Google's redirect.
+        real_url = _decode_google_news_url(item["link"])
+        item["link"] = real_url
+
+        if item.get("rss_thumb"):
+            item["image"] = item["rss_thumb"]
+        else:
+            item["image"] = _extract_image(real_url)
         return item
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
