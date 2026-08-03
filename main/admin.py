@@ -7,11 +7,25 @@ from .models import (
     News,
     StudentHelp,
     Volunteer,
+    GovScheme, SchemeUpdate,
 )
 
 admin.site.register(GalleryImage)
 admin.site.register(StudentHelp)
 admin.site.register(ContactMessage)
+
+@admin.register(GovScheme)
+class GovSchemeAdmin(admin.ModelAdmin):
+    list_display = ("name", "category", "is_active", "priority", "updated_at")
+    list_filter = ("category", "is_active")
+    search_fields = ("name", "short_description")
+
+
+@admin.register(SchemeUpdate)
+class SchemeUpdateAdmin(admin.ModelAdmin):
+    list_display = ("title", "category", "published_date")
+    list_filter = ("category",)
+    search_fields = ("title",)
 
 
 @admin.register(News)

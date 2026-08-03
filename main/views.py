@@ -7,7 +7,7 @@ import threading
 import time
 import os
 
-
+from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
@@ -292,4 +292,56 @@ def cron_fetch_news(request):
     from . import news_fetcher
     stats = news_fetcher.fetch_news()
     return JsonResponse({"ok": True, "stats": stats})
+SCHEME_FETCH_COOLDOWN_SECONDS = 60 * 60  # scheme announcements don't change every few minutes
+_SCHEME_FETCH_LOCK_KEY = "scheme_fetch_in_progress"
+
+
+def _maybe_trigger_background_scheme_fetch():
+    if not getattr(settings, "SCHEME_AUTO_REFRESH_ENABLED", True):
+        return
+    if cache.get(_SCHEME_FETCH_LOCK_KEY):
+        return
+
+    stale_after_seconds = getattr(settings, "SCHEME_REFRESH_INTERVAL_HOURS", 12) * 3600
+    latest = SchemeUpdate.objects.order_by("-created_at").values_list("created_at", flat=True).first()
+    is_stale = latest is None or (time.time() - latest.timestamp()) > stale_after_seconds
+    if not is_stale:
+        return
+
+    cache.set(_SCHEME_FETCH_LOCK_KEY, True, timeout=SCHEME_FETCH_COOLDOWN_SECONDS)
+
+    def _run():
+        try:
+            from . import scheme_fetcher
+            stats = scheme_fetcher.fetch_scheme_updates()
+            logger.info("Auto scheme fetch finished: %s", stats)
+        except Exception:
+            logger.exception("Background scheme fetch failed")
+
+    threading.Thread(target=_run, daemon=True).start()
+
+
+def artisan_support(request):
+    """Artisan Support page — curated genuine government schemes grouped
+    by category, plus auto-updating announcements from PIB RSS."""
+    category = request.GET.get("category", "").strip()
+
+    _maybe_trigger_background_scheme_fetch()
+
+    schemes_qs = GovScheme.objects.filter(is_active=True)
+    if category:
+        schemes_qs = schemes_qs.filter(category=category)
+
+    updates = SchemeUpdate.objects.all()
+    if category:
+        updates = updates.filter(category=category)
+    updates = updates[:15]
+
+    return render(request, "pages/artisan_support.html", {
+        "schemes": schemes_qs,
+        "updates": updates,
+        "categories": GovScheme.CATEGORY_CHOICES,
+        "active_category": category,
+    })
+
     

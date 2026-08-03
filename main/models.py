@@ -89,7 +89,53 @@ class Donation(models.Model):
 
     def __str__(self):
         return self.name
+class GovScheme(models.Model):
+    """Curated (admin-managed) list of real government schemes shown on
+    the Artisan Support page. Manually verified so links are always
+    genuine — auto-fetched updates (SchemeUpdate below) sit alongside
+    these as fresh news."""
 
+    CATEGORY_CHOICES = [
+        ("artisan", "Artisan / Kumhar Samaj"),
+        ("youth", "Youth / Skill Development"),
+        ("startup", "Startup / Business"),
+        ("scholarship", "Scholarship / Education"),
+    ]
+
+    name = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, db_index=True)
+    department = models.CharField(max_length=200, blank=True, default="")
+    short_description = models.TextField()
+    eligibility = models.TextField(blank=True, default="")
+    benefits = models.TextField(blank=True, default="")
+    official_link = models.URLField()
+    is_active = models.BooleanField(default=True)
+    priority = models.PositiveIntegerField(default=0, help_text="Higher number shows first")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-priority', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class SchemeUpdate(models.Model):
+    """Auto-fetched scheme-related announcements from PIB RSS
+    (see main/scheme_fetcher.py) — keeps the Artisan Support page
+    'automatically updating' without manual work."""
+
+    title = models.CharField(max_length=500)
+    source_link = models.URLField(unique=True, max_length=800)
+    category = models.CharField(max_length=100, blank=True, default="")
+    published_date = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-published_date']
+
+    def __str__(self):
+        return self.title
 
 class News(models.Model):
 
@@ -106,3 +152,4 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+    

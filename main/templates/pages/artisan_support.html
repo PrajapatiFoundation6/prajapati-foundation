@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Artisan Support | Prajapati Foundation{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/artisan.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Government Schemes</span>
+    <h1>Artisan &amp; Yuva Support</h1>
+    <p>Kumhar samaj ke artisans, youth, students aur naye entrepreneurs ke liye sarkari schemes — sabhi genuine official links ke saath.</p>
+  </div>
+</section>
+
+<div class="news-filter-bar">
+  <div class="container">
+    <div class="filter-scroll">
+      <a href="{% url 'artisan_support' %}" class="filter-btn {% if not active_category %}active{% endif %}">🗂 सभी Schemes</a>
+      {% for value, label in categories %}
+      <a href="{% url 'artisan_support' %}?category={{ value }}" class="filter-btn {% if active_category == value %}active{% endif %}">
+        {% if value == "artisan" %}🏺{% elif value == "youth" %}🎯{% elif value == "startup" %}🚀{% else %}🎓{% endif %}
+        {{ label }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<section class="scheme-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">Verified Schemes</span>
+      <h2>Sarkari Yojanaayein</h2>
+      <p>Hamari team ne yeh links manually verify kiye hain — seedha official government portal par jaate hain.</p>
+    </div>
+
+    <div class="scheme-grid">
+      {% for s in schemes %}
+      <div class="scheme-card reveal">
+        <span class="scheme-cat-badge scheme-cat-{{ s.category }}">
+          {% if s.category == "artisan" %}🏺 Artisan{% elif s.category == "youth" %}🎯 Youth{% elif s.category == "startup" %}🚀 Startup{% else %}🎓 Scholarship{% endif %}
+        </span>
+        <h3>{{ s.name }}</h3>
+        {% if s.department %}<p class="scheme-dept">{{ s.department }}</p>{% endif %}
+        <p class="scheme-desc">{{ s.short_description }}</p>
+
+        {% if s.eligibility %}
+        <div class="scheme-detail">
+          <strong>Eligibility:</strong>
+          <p>{{ s.eligibility }}</p>
+        </div>
+        {% endif %}
+
+        {% if s.benefits %}
+        <div class="scheme-detail">
+          <strong>Benefits:</strong>
+          <p>{{ s.benefits }}</p>
+        </div>
+        {% endif %}
+
+        <a href="{{ s.official_link }}" target="_blank" rel="noopener" class="btn btn-primary btn-full scheme-link">
+          Official Website Par Jaayein →
+        </a>
+      </div>
+      {% empty %}
+      <p class="no-schemes">Abhi schemes load ho rahi hain. Admin: <code>python manage.py seed_schemes</code> chalayein.</p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if updates %}
+<section class="scheme-updates-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">Auto-Updated</span>
+      <h2>Latest Scheme Announcements</h2>
+      <p>PIB (Press Information Bureau) se seedhe fetch hui taaza announcements.</p>
+    </div>
+
+    <div class="update-list">
+      {% for u in updates %}
+      <a href="{{ u.source_link }}" target="_blank" rel="noopener" class="update-item reveal">
+        <span class="update-cat">
+          {% if u.category == "artisan" %}🏺{% elif u.category == "youth" %}🎯{% elif u.category == "startup" %}🚀{% else %}🎓{% endif %}
+        </span>
+        <div class="update-body">
+          <h4>{{ u.title }}</h4>
+          <span class="update-date">📅 {{ u.published_date|date:"d M Y" }} · PIB</span>
+        </div>
+        <span class="update-arrow">→</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="scheme-note-section">
+  <div class="container reveal">
+    <div class="scheme-note-card">
+      <h3>⚠️ Zaroori Jaankari</h3>
+      <p>
+        Sabhi links official government (.gov.in) websites ke hain. Kisi bhi scheme ke liye apply karne se pehle
+        official website par jaake latest eligibility aur deadline zaroor check karein — schemes ke rules
+        samay-samay par update hote rehte hain. Prajapati Foundation kisi bhi scheme ki guarantee nahi deta,
+        hum sirf sahi jaankari tak pahunchane mein madad karte hain.
+      </p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

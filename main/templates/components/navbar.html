@@ -19,6 +19,7 @@
         <li><a href="{% url 'gallery' %}"   class="{% if request.resolver_match.url_name == 'gallery' %}active{% endif %}">Gallery</a></li>
         <li><a href="{% url 'news' %}"      class="{% if request.resolver_match.url_name == 'news' %}active{% endif %}">News</a></li>
         <li><a href="{% url 'contact' %}"   class="{% if request.resolver_match.url_name == 'contact' %}active{% endif %}">Contact</a></li>
+        <li><a href="{% url 'artisan_support' %}" class="{% if request.resolver_match.url_name == 'artisan_support' %}active{% endif %}">Artisan Support</a></li>
       </ul>
     </nav>
 
