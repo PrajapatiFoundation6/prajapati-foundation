@@ -1,28 +1,4 @@
-/* ================= MARQUEE ================= */
-.marquee-strip{
-  background:var(--green-800);
-  overflow:hidden;
-  padding:11px 0;
-}
-.marquee-track{
-  display:flex;
-  gap:50px;
-  width:max-content;
-  animation:marquee 26s linear infinite;
-}
-.marquee-track span{
-  color:rgba(255,255,255,0.8);
-  font-size:13px;
-  font-weight:500;
-  letter-spacing:0.4px;
-  white-space:nowrap;
-}
-@keyframes marquee{
-  from{ transform:translateX(0); }
-  to{ transform:translateX(-50%); }
-}
-
-/* ================= QUICK LINKS BAR ================= */
+/* ================= QUICK LINKS BAR (top of page) ================= */
 .quick-links-bar{
   background:#fff;
   border-bottom:1px solid var(--border);
@@ -66,88 +42,157 @@
 }
 .ql-btn-donate:hover{ opacity:0.9; }
 
-@media (max-width:900px){
-  .quick-links-bar{ top:0; }
+/* ================= HERO SHOWCASE ================= */
+.hero-showcase{
+  padding:28px 0 70px;
+  background:var(--bg);
 }
 
-/* ================= HERO ================= */
-.hero{
+/* ---- Framed photo slider ---- */
+.frame-wrap{ margin-bottom:38px; }
+
+.hero-frame{
   position:relative;
-  min-height:82vh;
-  display:flex;
-  align-items:center;
+  width:100%;
+  aspect-ratio:16/9;
+  border-radius:var(--radius-lg);
   overflow:hidden;
-  color:#fff;
+  box-shadow:var(--shadow-lg);
+  background:var(--green-900);
 }
 
-.hero-slider{ position:absolute; inset:0; z-index:0; }
+.frame-slide{
+  position:absolute; inset:0;
+  opacity:0;
+  transition:opacity .9s ease;
+}
+.frame-slide.active{ opacity:1; }
 
-.hero-slider .slide{
+/* Blurred, scaled copy of the same photo fills the frame behind it so
+   there are no ugly black bars — the sharp photo on top still shows
+   100% of the original image via object-fit:contain. */
+.frame-bg{
   position:absolute; inset:0;
   background-size:cover;
   background-position:center;
-  opacity:0;
-  transition:opacity 1.2s ease;
-}
-.hero-slider .slide.active{ opacity:1; }
-
-.hero::before{
-  content:"";
-  position:absolute; inset:0;
-  background:linear-gradient(115deg, rgba(15,36,24,0.92) 10%, rgba(15,36,24,0.55) 55%, rgba(15,36,24,0.35));
-  z-index:1;
+  filter:blur(30px) brightness(0.55) saturate(1.15);
+  transform:scale(1.2);
 }
 
-.hero-content{
+.frame-img{
   position:relative;
+  z-index:1;
+  width:100%;
+  height:100%;
+  object-fit:contain;   /* full photo always visible, never cropped */
+  display:block;
+}
+
+.frame-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:42px; height:42px;
+  border-radius:50%;
+  border:none;
+  background:rgba(15,36,24,0.55);
+  color:#fff;
+  font-size:24px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
   z-index:2;
-  width:92%;
-  max-width:1240px;
+  backdrop-filter:blur(4px);
+  transition:background .2s ease, transform .2s ease;
+}
+.frame-nav:hover{ background:rgba(15,36,24,0.82); transform:translateY(-50%) scale(1.06); }
+.frame-prev{ left:14px; }
+.frame-next{ right:14px; }
+
+.frame-dots{
+  position:absolute;
+  bottom:14px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:8px;
+  z-index:2;
+}
+.frame-dot{
+  width:8px; height:8px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.5);
+  border:none;
+  padding:0;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+.frame-dot.active{
+  background:#fff;
+  width:22px;
+  border-radius:999px;
+}
+
+/* ---- Text block below the photo ---- */
+.hero-text{
+  max-width:720px;
   margin:0 auto;
-  padding:60px 0;
+  text-align:center;
 }
 
 .hero-eyebrow{
   display:inline-block;
   padding:7px 16px;
   border-radius:999px;
-  background:rgba(255,255,255,0.14);
-  border:1px solid rgba(255,255,255,0.3);
+  background:var(--bg-soft);
+  color:var(--green-700);
+  border:1px solid var(--border);
   font-size:13px;
-  margin-bottom:18px;
-}
-
-.hero-content h1{
-  color:#fff;
-  font-size:clamp(32px,5vw,54px);
-  max-width:680px;
+  font-weight:600;
   margin-bottom:16px;
 }
 
+.hero-text h1{
+  color:var(--green-800);
+  font-size:clamp(28px,4.4vw,46px);
+  margin-bottom:14px;
+}
+
 .hero-sub{
+  color:var(--ink-3);
+  font-size:16px;
   max-width:560px;
-  color:rgba(255,255,255,0.85);
-  font-size:16.5px;
-  margin-bottom:28px;
+  margin:0 auto 26px;
 }
 
 .hero-actions{
   display:flex;
+  justify-content:center;
   flex-wrap:wrap;
   gap:14px;
-  margin-bottom:44px;
+  margin-bottom:38px;
 }
+
+.btn-outline{
+  background:#fff;
+  color:var(--green-700);
+  border:1.5px solid var(--green-600);
+}
+.btn-outline:hover{ background:var(--green-600); color:#fff; transform:translateY(-3px); }
 
 .hero-stats{
   display:flex;
-  gap:40px;
+  justify-content:center;
+  gap:44px;
   flex-wrap:wrap;
 }
-.stat-num{ font-size:28px; font-weight:800; color:#fff; }
-.stat-label{ font-size:13px; color:rgba(255,255,255,0.7); }
+.stat-num{ font-size:26px; font-weight:800; color:var(--green-700); }
+.stat-label{ font-size:12.5px; color:var(--ink-3); }
 
 /* ================= QUICK ACTIONS ================= */
-.quick-actions{ padding:90px 0 40px; }
+.quick-actions{ padding:20px 0 40px; }
 
 .qa-grid{
   display:grid;
@@ -175,9 +220,6 @@
 .qa-icon{ font-size:32px; margin-bottom:12px; }
 .qa-card h3{ font-size:16px; margin-bottom:6px; }
 .qa-card p{ font-size:13px; color:var(--ink-3); margin:0; }
-
-@media (max-width:900px){ .qa-grid{ grid-template-columns:repeat(2,1fr); } }
-@media (max-width:480px){ .qa-grid{ grid-template-columns:1fr; } }
 
 /* ================= MISSION ================= */
 .mission-section{ padding:90px 0; background:var(--bg-soft); }
@@ -220,40 +262,27 @@
 
 @media (max-width:900px){
 
-  /* ---- Hero: shorter, text pinned top-left, image stays visible ---- */
-  .hero{
-    min-height:56vh;
-    align-items:flex-start;      /* text top instead of vertically centered */
-  }
-  .hero-slider .slide{
-    background-position:center 28%;   /* keeps subject in frame, less crop */
-  }
-  /* Lighter, top-weighted overlay so the photo actually shows through —
-     dark enough at the top for text contrast, fades out toward the bottom */
-  .hero::before{
-    background:linear-gradient(180deg, rgba(15,36,24,0.80) 0%, rgba(15,36,24,0.42) 48%, rgba(15,36,24,0.20) 100%);
-  }
-  .hero-content{
-    padding:30px 0 34px;
-    text-align:left;
-  }
+  .hero-showcase{ padding:18px 0 50px; }
 
+  .hero-frame{ aspect-ratio:4/3; border-radius:18px; }
+  .frame-nav{ width:36px; height:36px; font-size:20px; }
+  .frame-prev{ left:10px; }
+  .frame-next{ right:10px; }
+  .frame-dots{ bottom:10px; }
+
+  .hero-text{ padding:0 4px; }
   .hero-eyebrow{ font-size:11.5px; padding:6px 13px; margin-bottom:12px; }
-  .hero-content h1{ font-size:clamp(24px,6.6vw,32px); margin-bottom:10px; line-height:1.25; }
-  .hero-sub{ font-size:13.5px; margin-bottom:20px; }
+  .hero-text h1{ font-size:clamp(23px,6.4vw,30px); margin-bottom:10px; line-height:1.28; }
+  .hero-sub{ font-size:13.5px; margin-bottom:22px; }
 
-  .hero-actions{
-    flex-direction:column;
-    gap:10px;
-    margin-bottom:26px;
-  }
+  .hero-actions{ flex-direction:column; gap:10px; margin-bottom:26px; }
   .hero-actions .btn{ width:100%; }
 
   .hero-stats{
     gap:0;
     justify-content:space-between;
-    background:rgba(255,255,255,0.10);
-    border:1px solid rgba(255,255,255,0.18);
+    background:var(--bg-soft);
+    border:1px solid var(--border);
     border-radius:14px;
     padding:12px 8px;
   }
@@ -261,20 +290,20 @@
   .stat-num{ font-size:19px; }
   .stat-label{ font-size:10.5px; }
 
-  .marquee-track span{ font-size:12px; }
-
-  /* ---- Quick action cards: compact 2-column ---- */
-  .quick-actions{ padding:50px 0 16px; }
-  .qa-grid{ gap:12px; }
-  .qa-card{
-    padding:18px 12px;
-    border-radius:16px;
+  /* ---- Quick action cards: 3 across, then next row of 3 ---- */
+  .quick-actions{ padding:8px 0 16px; }
+  .qa-grid{
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
   }
-  .qa-icon{ font-size:24px; margin-bottom:8px; }
-  .qa-card h3{ font-size:13px; margin-bottom:3px; line-height:1.3; }
-  .qa-card p{ font-size:11px; }
+  .qa-card{
+    padding:14px 6px;
+    border-radius:14px;
+  }
+  .qa-icon{ font-size:20px; margin-bottom:6px; }
+  .qa-card h3{ font-size:11px; margin-bottom:2px; line-height:1.25; }
+  .qa-card p{ font-size:9.5px; }
 
-  /* ---- Mission cards ---- */
   .mission-section{ padding:50px 0; }
   .mission-grid{ gap:14px; }
   .mission-card{ padding:22px 20px; }
@@ -282,18 +311,13 @@
   .mission-card h3{ font-size:16.5px; }
   .mission-card p{ font-size:13.5px; }
 
-  /* ---- CTA strip ---- */
   .cta-strip{ padding:50px 0; }
   .cta-actions{ flex-direction:column; }
   .cta-actions .btn{ width:100%; }
 }
 
-@media (max-width:480px){
-  .hero{ min-height:52vh; }
-  .hero-slider .slide{ background-position:center 20%; }
-
-  .qa-card{ padding:16px 10px; }
-  .qa-icon{ font-size:22px; }
-
+@media (max-width:420px){
+  .qa-card p{ display:none; }
+  .qa-card h3{ font-size:10.5px; }
   .section-header h2{ font-size:22px; }
 }

@@ -9,26 +9,7 @@
 
 {% block content %}
 
-<div class="marquee-strip">
-  <div class="marquee-track">
-    <span>Shiksha Support</span>
-    <span>Kumhar Kala Sanrakshan</span>
-    <span>Samaj Seva</span>
-    <span>Volunteer Program</span>
-    <span>Community Events</span>
-    <span>Artisan Support</span>
-    <span>Scholarship Guidance</span>
-    <span>Shiksha Support</span>
-    <span>Kumhar Kala Sanrakshan</span>
-    <span>Samaj Seva</span>
-    <span>Volunteer Program</span>
-    <span>Community Events</span>
-    <span>Artisan Support</span>
-    <span>Scholarship Guidance</span>
-  </div>
-</div>
-
-<!-- Quick Links bar — fast access to every page, scrolls horizontally on mobile -->
+<!-- Quick Links bar — now the very first thing under the navbar -->
 <div class="quick-links-bar">
   <div class="container">
     <div class="ql-scroll">
@@ -45,33 +26,59 @@
   </div>
 </div>
 
-<section class="hero">
-  <div class="hero-slider">
-    {% for img in images %}
-    <div class="slide {% if forloop.first %}active{% endif %}" style="background-image:url('{{ img.image.url }}')"></div>
-    {% empty %}
-    <div class="slide active" style="background-image:url('{% static "assets/images/hero.jpg" %}')"></div>
-    {% endfor %}
-  </div>
+<section class="hero-showcase">
+  <div class="container">
 
-  <div class="hero-content">
-    <div class="hero-eyebrow">Prajapati Foundation</div>
-    <h1>Ek Sangatit Samaj,<br>Ek Sashakt Bhavishya</h1>
-    <p class="hero-sub">
-      Shiksha, kala aur samajik ekta ke madhyam se Kumhar samaj ka utthan —
-      har parivaar ko ek behtar kal.
-    </p>
+    <!-- Framed photo slider: full image always visible (no crop), auto-shuffles,
+         and has manual prev/next + dot controls. -->
+    <div class="frame-wrap reveal">
+      <div class="hero-frame" id="heroFrame">
+        {% for img in images %}
+        <div class="frame-slide {% if forloop.first %}active{% endif %}">
+          <div class="frame-bg" style="background-image:url('{{ img.image.url }}')"></div>
+          <img class="frame-img" src="{{ img.image.url }}" alt="Prajapati Foundation" {% if not forloop.first %}loading="lazy"{% endif %}>
+        </div>
+        {% empty %}
+        <div class="frame-slide active">
+          <div class="frame-bg" style="background-image:url('{% static "assets/images/hero.jpg" %}')"></div>
+          <img class="frame-img" src="{% static 'assets/images/hero.jpg' %}" alt="Prajapati Foundation">
+        </div>
+        {% endfor %}
 
-    <div class="hero-actions">
-      <a href="{% url 'donation' %}" class="btn btn-amber">💚 Donate Now</a>
-      <a href="{% url 'join' %}" class="btn btn-ghost">Join Us →</a>
+        {% if images|length > 1 %}
+        <button type="button" class="frame-nav frame-prev" id="framePrev" aria-label="Pichli photo">‹</button>
+        <button type="button" class="frame-nav frame-next" id="frameNext" aria-label="Agli photo">›</button>
+
+        <div class="frame-dots" id="frameDots">
+          {% for img in images %}
+          <button type="button" class="frame-dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" aria-label="Photo {{ forloop.counter }} dikhayein"></button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="hero-stats">
-      <div class="stat-item"><div class="stat-num">500+</div><div class="stat-label">Members</div></div>
-      <div class="stat-item"><div class="stat-num">4+</div><div class="stat-label">Programs</div></div>
-      <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Transparent</div></div>
+    <!-- Text now sits below the photo, not overlaid on top of it -->
+    <div class="hero-text reveal">
+      <div class="hero-eyebrow">Prajapati Foundation</div>
+      <h1>Ek Sangatit Samaj,<br>Ek Sashakt Bhavishya</h1>
+      <p class="hero-sub">
+        Shiksha, kala aur samajik ekta ke madhyam se Kumhar samaj ka utthan —
+        har parivaar ko ek behtar kal.
+      </p>
+
+      <div class="hero-actions">
+        <a href="{% url 'donation' %}" class="btn btn-amber">💚 Donate Now</a>
+        <a href="{% url 'join' %}" class="btn btn-outline">Join Us →</a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-item"><div class="stat-num">500+</div><div class="stat-label">Members</div></div>
+        <div class="stat-item"><div class="stat-num">4+</div><div class="stat-label">Programs</div></div>
+        <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Transparent</div></div>
+      </div>
     </div>
+
   </div>
 </section>
 
