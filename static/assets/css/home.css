@@ -22,6 +22,54 @@
   to{ transform:translateX(-50%); }
 }
 
+/* ================= QUICK LINKS BAR ================= */
+.quick-links-bar{
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:82px;
+  z-index:90;
+}
+
+.ql-scroll{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:12px 0;
+  scrollbar-width:none;
+}
+.ql-scroll::-webkit-scrollbar{ display:none; }
+
+.ql-btn{
+  flex-shrink:0;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 16px;
+  border-radius:999px;
+  background:var(--bg-soft);
+  color:var(--ink-2);
+  text-decoration:none;
+  font-size:13.5px;
+  font-weight:500;
+  white-space:nowrap;
+  transition:all .2s ease;
+}
+.ql-btn:hover{ background:#e2f0e6; }
+.ql-btn.active{
+  background:linear-gradient(135deg,var(--green-600),var(--green-500));
+  color:#fff;
+}
+.ql-btn-donate{
+  background:linear-gradient(135deg,var(--amber-600),var(--amber-500));
+  color:#fff;
+}
+.ql-btn-donate:hover{ opacity:0.9; }
+
+@media (max-width:900px){
+  .quick-links-bar{ top:0; }
+}
+
 /* ================= HERO ================= */
 .hero{
   position:relative;
@@ -98,11 +146,6 @@
 .stat-num{ font-size:28px; font-weight:800; color:#fff; }
 .stat-label{ font-size:13px; color:rgba(255,255,255,0.7); }
 
-@media (max-width:640px){
-  .hero{ min-height:70vh; }
-  .hero-stats{ gap:26px; }
-}
-
 /* ================= QUICK ACTIONS ================= */
 .quick-actions{ padding:90px 0 40px; }
 
@@ -170,3 +213,87 @@
 .cta-strip h2{ color:#fff; font-size:clamp(26px,3.6vw,38px); }
 .cta-strip p{ color:rgba(255,255,255,0.88); max-width:520px; margin:0 auto 26px; }
 .cta-actions{ display:flex; justify-content:center; gap:14px; flex-wrap:wrap; }
+
+/* ==========================================================================
+   MOBILE OPTIMIZATIONS
+   ========================================================================== */
+
+@media (max-width:900px){
+
+  /* ---- Hero: shorter, text pinned top-left, image stays visible ---- */
+  .hero{
+    min-height:56vh;
+    align-items:flex-start;      /* text top instead of vertically centered */
+  }
+  .hero-slider .slide{
+    background-position:center 28%;   /* keeps subject in frame, less crop */
+  }
+  /* Lighter, top-weighted overlay so the photo actually shows through —
+     dark enough at the top for text contrast, fades out toward the bottom */
+  .hero::before{
+    background:linear-gradient(180deg, rgba(15,36,24,0.80) 0%, rgba(15,36,24,0.42) 48%, rgba(15,36,24,0.20) 100%);
+  }
+  .hero-content{
+    padding:30px 0 34px;
+    text-align:left;
+  }
+
+  .hero-eyebrow{ font-size:11.5px; padding:6px 13px; margin-bottom:12px; }
+  .hero-content h1{ font-size:clamp(24px,6.6vw,32px); margin-bottom:10px; line-height:1.25; }
+  .hero-sub{ font-size:13.5px; margin-bottom:20px; }
+
+  .hero-actions{
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:26px;
+  }
+  .hero-actions .btn{ width:100%; }
+
+  .hero-stats{
+    gap:0;
+    justify-content:space-between;
+    background:rgba(255,255,255,0.10);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:14px;
+    padding:12px 8px;
+  }
+  .stat-item{ flex:1; text-align:center; }
+  .stat-num{ font-size:19px; }
+  .stat-label{ font-size:10.5px; }
+
+  .marquee-track span{ font-size:12px; }
+
+  /* ---- Quick action cards: compact 2-column ---- */
+  .quick-actions{ padding:50px 0 16px; }
+  .qa-grid{ gap:12px; }
+  .qa-card{
+    padding:18px 12px;
+    border-radius:16px;
+  }
+  .qa-icon{ font-size:24px; margin-bottom:8px; }
+  .qa-card h3{ font-size:13px; margin-bottom:3px; line-height:1.3; }
+  .qa-card p{ font-size:11px; }
+
+  /* ---- Mission cards ---- */
+  .mission-section{ padding:50px 0; }
+  .mission-grid{ gap:14px; }
+  .mission-card{ padding:22px 20px; }
+  .m-icon{ font-size:26px; margin-bottom:10px; }
+  .mission-card h3{ font-size:16.5px; }
+  .mission-card p{ font-size:13.5px; }
+
+  /* ---- CTA strip ---- */
+  .cta-strip{ padding:50px 0; }
+  .cta-actions{ flex-direction:column; }
+  .cta-actions .btn{ width:100%; }
+}
+
+@media (max-width:480px){
+  .hero{ min-height:52vh; }
+  .hero-slider .slide{ background-position:center 20%; }
+
+  .qa-card{ padding:16px 10px; }
+  .qa-icon{ font-size:22px; }
+
+  .section-header h2{ font-size:22px; }
+}

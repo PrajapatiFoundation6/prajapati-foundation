@@ -28,6 +28,23 @@
   </div>
 </div>
 
+<!-- Quick Links bar — fast access to every page, scrolls horizontally on mobile -->
+<div class="quick-links-bar">
+  <div class="container">
+    <div class="ql-scroll">
+      <a href="{% url 'home' %}" class="ql-btn {% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Home</a>
+      <a href="{% url 'about' %}" class="ql-btn {% if request.resolver_match.url_name == 'about' %}active{% endif %}">👥 About</a>
+      <a href="{% url 'education' %}" class="ql-btn {% if request.resolver_match.url_name == 'education' %}active{% endif %}">🎓 Education</a>
+      <a href="{% url 'artisan_support' %}" class="ql-btn {% if request.resolver_match.url_name == 'artisan_support' %}active{% endif %}">🧱 Artisan Support</a>
+      <a href="{% url 'gallery' %}" class="ql-btn {% if request.resolver_match.url_name == 'gallery' %}active{% endif %}">🖼️ Gallery</a>
+      <a href="{% url 'news' %}" class="ql-btn {% if request.resolver_match.url_name == 'news' %}active{% endif %}">📰 News</a>
+      <a href="{% url 'join' %}" class="ql-btn {% if request.resolver_match.url_name == 'join' %}active{% endif %}">🤝 Join Us</a>
+      <a href="{% url 'donation' %}" class="ql-btn ql-btn-donate {% if request.resolver_match.url_name == 'donation' %}active{% endif %}">💚 Donate</a>
+      <a href="{% url 'contact' %}" class="ql-btn {% if request.resolver_match.url_name == 'contact' %}active{% endif %}">☎️ Contact</a>
+    </div>
+  </div>
+</div>
+
 <section class="hero">
   <div class="hero-slider">
     {% for img in images %}
