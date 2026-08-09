@@ -1,4 +1,6 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.shortcuts import render, redirect
+from django.urls import path
 
 from .models import (
     ContactMessage,
@@ -9,8 +11,40 @@ from .models import (
     Volunteer,
     GovScheme, SchemeUpdate,
 )
+from .forms import BulkGalleryUploadForm
 
-admin.site.register(GalleryImage)
+
+@admin.register(GalleryImage)
+class GalleryImageAdmin(admin.ModelAdmin):
+    list_display = ("title", "uploaded_at")
+    change_list_template = "admin/main/galleryimage/change_list.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path("bulk-upload/", self.admin_site.admin_view(self.bulk_upload), name="galleryimage_bulk_upload"),
+        ]
+        return custom_urls + urls
+
+    def bulk_upload(self, request):
+        if request.method == "POST":
+            title = request.POST.get("title", "").strip()
+            files = request.FILES.getlist("images")
+
+            if not title:
+                messages.error(request, "Kripya title darj karein.")
+            elif not files:
+                messages.error(request, "Kripya kam se kam ek image select karein.")
+            else:
+                created = 0
+                for f in files:
+                    GalleryImage.objects.create(title=title, image=f)
+                    created += 1
+                messages.success(request, f"{created} images successfully upload ho gayi!")
+                return redirect("admin:main_galleryimage_changelist")
+
+        return render(request, "admin/main/galleryimage/bulk_upload.html", {})
+
 admin.site.register(StudentHelp)
 admin.site.register(ContactMessage)
 

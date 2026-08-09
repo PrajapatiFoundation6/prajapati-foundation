@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Bulk Upload Gallery Images</h1>
+
+<form method="POST" enctype="multipart/form-data" style="max-width:500px;">
+  {% csrf_token %}
+
+  <div style="margin-bottom:16px;">
+    <label style="display:block;font-weight:600;margin-bottom:6px;">Title (sabhi images ke liye same)</label>
+    <input type="text" name="title" class="vTextField" style="width:100%;padding:8px;" required>
+  </div>
+
+  <div style="margin-bottom:16px;">
+    <label style="display:block;font-weight:600;margin-bottom:6px;">Select Multiple Images</label>
+    <input type="file" name="images" multiple accept="image/*" required>
+    <p style="font-size:12px;color:#666;margin-top:6px;">Ctrl (ya Cmd) dabaakar multiple files select karein.</p>
+  </div>
+
+  <input type="submit" value="Upload All" class="default" style="padding:10px 24px;">
+</form>
+{% endblock %}
