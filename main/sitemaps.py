@@ -16,6 +16,7 @@ class StaticViewSitemap(Sitemap):
             ("donation", 0.9),
             ("join", 0.7),
             ("contact", 0.6),
+            (""artisan_support", 0.7")
         ]
 
     def location(self, item):
