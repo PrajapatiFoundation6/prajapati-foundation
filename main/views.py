@@ -1,22 +1,22 @@
-import razorpay
 import hashlib
 import hmac
 import json
 import logging
+import os
 import threading
 import time
-import os
 
-from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer
+import requests as http
 from django.conf import settings
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_POST
 
 from .forms import ContactForm, StudentHelpForm, VolunteerForm
-from .models import Donation, GalleryImage, News, Volunteer
+from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────
 
 def home(request):
-    images = GalleryImage.objects.all()
+    # SPEED: only the latest few photos for the hero carousel, not the whole gallery.
+    images = GalleryImage.objects.all()[:6]
     return render(request, 'pages/index.html', {'images': images})
 
 
@@ -54,7 +55,8 @@ def about(request):
 
 
 def gallery(request):
-    images = GalleryImage.objects.all().order_by("-uploaded_at")
+    # SPEED: cap the page size (originals can be large).
+    images = GalleryImage.objects.all().order_by("-uploaded_at")[:60]
     return render(request, "pages/gallery.html", {"images": images})
 
 
@@ -84,6 +86,9 @@ def contact(request):
     return render(request, "pages/contact.html", {"form": ContactForm()})
 
 
+# SECURITY/BUGFIX: the donation JS reads the csrftoken cookie, but this page has
+# no {% csrf_token %}, so a first-time visitor had no cookie and got a 403.
+@ensure_csrf_cookie
 def donation(request):
     donors = Donation.objects.filter(show_public=True).order_by('-created')[:12]
     return render(request, "pages/donation.html", {
@@ -93,26 +98,17 @@ def donation(request):
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# Razorpay — secure order creation + signature-verified save
-#
-# SECURITY: the old implementation trusted whatever "amount" and
-# "payment_id" the browser sent to /donation/save/, with @csrf_exempt and
-# no verification at all — anyone could POST a fake payment_id and amount
-# to create bogus "successful donation" records without paying anything.
-#
-# Fixed flow:
-#   1. Browser asks the server to create a Razorpay Order (server decides
-#      the amount that goes to Razorpay).
-#   2. Razorpay Checkout runs using that order_id.
-#   3. On success, the browser sends the order_id + payment_id + signature
-#      back to the server, which recomputes the HMAC-SHA256 signature with
-#      the secret key and only saves the donation if it matches.
-#
-# NOTE: both endpoints below require CSRF tokens (no @csrf_exempt). Make
-# sure the donation page includes {% csrf_token %} somewhere so the
-# csrftoken cookie is set, and that the frontend JS sends it via the
-# X-CSRFToken header on both fetch() calls.
+# Razorpay — server-side order creation + signature AND amount verification
 # ─────────────────────────────────────────────────────────────────────────
+
+def _parse_json_dict(request):
+    """Return the JSON body only if it is an object (dict), else None."""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
 
 @require_POST
 def donation_create_order(request):
@@ -120,16 +116,17 @@ def donation_create_order(request):
         logger.error("Razorpay keys are not configured (see .env.example).")
         return JsonResponse({"ok": False, "error": "Payments are not configured yet."}, status=503)
 
+    data = _parse_json_dict(request)
+    if data is None:
+        return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
+
     try:
-        data = json.loads(request.body.decode("utf-8"))
         amount = int(data.get("amount", 0))
-    except (ValueError, TypeError, json.JSONDecodeError):
+    except (ValueError, TypeError):
         return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
 
     if amount < 1 or amount > 1_000_000:
         return JsonResponse({"ok": False, "error": "Please enter a valid amount."}, status=400)
-
-    import requests as http  # local import keeps module import light for non-donation pages
 
     try:
         resp = http.post(
@@ -159,26 +156,25 @@ def donation_create_order(request):
 
 @require_POST
 def donation_save(request):
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
+    data = _parse_json_dict(request)
+    if data is None:
         return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
 
-    order_id = (data.get("razorpay_order_id") or "").strip()
-    payment_id = (data.get("razorpay_payment_id") or "").strip()
-    signature = (data.get("razorpay_signature") or "").strip()
+    order_id = str(data.get("razorpay_order_id") or "").strip()
+    payment_id = str(data.get("razorpay_payment_id") or "").strip()
+    signature = str(data.get("razorpay_signature") or "").strip()
 
     if not (order_id and payment_id and signature):
         return JsonResponse({"ok": False, "error": "Missing payment details."}, status=400)
 
     if Donation.objects.filter(payment_id=payment_id).exists():
-        # Already recorded (e.g. duplicate callback) — treat as success, don't duplicate.
-        return JsonResponse({"ok": True})
+        return JsonResponse({"ok": True})  # duplicate callback, already recorded
 
-    if not settings.RAZORPAY_KEY_SECRET:
-        logger.error("Razorpay secret is not configured; refusing to trust unverified payment.")
+    if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
+        logger.error("Razorpay keys missing; refusing to trust unverified payment.")
         return JsonResponse({"ok": False, "error": "Payments are not configured yet."}, status=503)
 
+    # 1) Signature check
     expected_signature = hmac.new(
         settings.RAZORPAY_KEY_SECRET.encode("utf-8"),
         f"{order_id}|{payment_id}".encode("utf-8"),
@@ -189,37 +185,51 @@ def donation_save(request):
         logger.warning("Razorpay signature mismatch for order %s", order_id)
         return JsonResponse({"ok": False, "error": "Payment verification failed."}, status=400)
 
-    name = (data.get("name") or "").strip()[:200] or "Anonymous"
-    email = (data.get("email") or "").strip()[:254]
-
+    # 2) SECURITY FIX: take the amount from Razorpay, never from the browser.
     try:
-        amount = int(data.get("amount", 0))
-    except (ValueError, TypeError):
-        amount = 0
-    if amount < 1:
-        amount = 0
+        r = http.get(
+            f"https://api.razorpay.com/v1/payments/{payment_id}",
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET),
+            timeout=10,
+        )
+        r.raise_for_status()
+        payment = r.json()
+    except http.RequestException as exc:
+        logger.error("Razorpay payment fetch failed: %s", exc)
+        return JsonResponse({"ok": False, "error": "Could not verify payment. Contact support."}, status=502)
 
-    Donation.objects.create(
-        name=name,
-        email=email,
-        amount=amount,
-        razorpay_order_id=order_id,
+    if payment.get("order_id") != order_id or payment.get("status") not in ("captured", "authorized"):
+        logger.warning("Payment %s not valid for order %s (status=%s)",
+                       payment_id, order_id, payment.get("status"))
+        return JsonResponse({"ok": False, "error": "Payment not completed."}, status=400)
+
+    amount = int(payment.get("amount", 0)) // 100   # paise -> rupees
+    if amount < 1:
+        return JsonResponse({"ok": False, "error": "Invalid amount."}, status=400)
+
+    name = str(data.get("name") or "").strip()[:200] or "Anonymous"
+    email = str(data.get("email") or "").strip()[:254]
+
+    # get_or_create avoids an IntegrityError (500) on double callbacks.
+    Donation.objects.get_or_create(
         payment_id=payment_id,
-        show_public=True,
+        defaults={
+            "name": name,
+            "email": email,
+            "amount": amount,
+            "razorpay_order_id": order_id,
+            "show_public": True,
+        },
     )
 
     return JsonResponse({"ok": True})
 
 
 # ─────────────────────────────────────────────────────────────────────────
-# News — category filter + lightweight "auto refresh" so the page always
-# tries to keep itself current without needing someone to run a command
-# by hand. A real cron job / `python manage.py fetch_news` is still the
-# most reliable option for production (see README), this is a best-effort
-# fallback that runs in a background thread so page loads stay fast.
+# News — category filter + best-effort background refresh
 # ─────────────────────────────────────────────────────────────────────────
 
-NEWS_FETCH_COOLDOWN_SECONDS = 15 * 60       # never attempt more than once / 15 min
+NEWS_FETCH_COOLDOWN_SECONDS = 15 * 60
 _FETCH_LOCK_KEY = "news_fetch_in_progress"
 
 
@@ -229,7 +239,7 @@ def _maybe_trigger_background_fetch():
         return
 
     if cache.get(_FETCH_LOCK_KEY):
-        return  # a fetch is already running or ran very recently
+        return
 
     stale_after_seconds = getattr(settings, "NEWS_REFRESH_INTERVAL_HOURS", 6) * 3600
 
@@ -239,7 +249,6 @@ def _maybe_trigger_background_fetch():
     if not is_stale:
         return
 
-    # Set the cooldown flag immediately so concurrent requests don't all spawn threads.
     cache.set(_FETCH_LOCK_KEY, True, timeout=NEWS_FETCH_COOLDOWN_SECONDS)
 
     def _run():
@@ -254,10 +263,7 @@ def _maybe_trigger_background_fetch():
 
 
 def news(request):
-    """
-    News page — category filter support.
-    URL: /news/?category=<category name>
-    """
+    """News page. URL: /news/?category=<category name>"""
     category = request.GET.get("category", "").strip()
 
     _maybe_trigger_background_fetch()
@@ -266,7 +272,7 @@ def news(request):
     if category:
         qs = qs.filter(category=category)
 
-    news_list = qs[:30]
+    news_list = list(qs[:30])   # list() so the template's |length doesn't run an extra COUNT query
     trending = News.objects.all().order_by("-published_date")[:6]
 
     categories = (
@@ -283,16 +289,26 @@ def news(request):
         "categories": categories,
         "active_category": category,
     })
+
+
 @require_GET
 def cron_fetch_news(request):
-    secret = request.GET.get("key", "")
-    if secret != os.environ.get("CRON_SECRET", ""):
+    # SECURITY FIX: if CRON_SECRET was unset, "" == "" matched and the endpoint was open.
+    secret = os.environ.get("CRON_SECRET", "")
+    key = request.GET.get("key", "")
+    if not secret or not hmac.compare_digest(key.encode("utf-8"), secret.encode("utf-8")):
         return JsonResponse({"ok": False, "error": "Unauthorized"}, status=403)
 
     from . import news_fetcher
     stats = news_fetcher.fetch_news()
     return JsonResponse({"ok": True, "stats": stats})
-SCHEME_FETCH_COOLDOWN_SECONDS = 60 * 60  # scheme announcements don't change every few minutes
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Artisan Support
+# ─────────────────────────────────────────────────────────────────────────
+
+SCHEME_FETCH_COOLDOWN_SECONDS = 60 * 60
 _SCHEME_FETCH_LOCK_KEY = "scheme_fetch_in_progress"
 
 
@@ -322,8 +338,7 @@ def _maybe_trigger_background_scheme_fetch():
 
 
 def artisan_support(request):
-    """Artisan Support page — curated genuine government schemes grouped
-    by category, plus auto-updating announcements from PIB RSS."""
+    """Curated government schemes + auto-updating PIB announcements."""
     category = request.GET.get("category", "").strip()
 
     _maybe_trigger_background_scheme_fetch()
@@ -343,5 +358,3 @@ def artisan_support(request):
         "categories": GovScheme.CATEGORY_CHOICES,
         "active_category": category,
     })
-
-    

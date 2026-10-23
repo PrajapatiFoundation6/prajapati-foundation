@@ -1,6 +1,6 @@
 User-agent: *
-Allow: /
 Disallow: /admin/
+Disallow: /cron/
 Disallow: /donation/create-order/
 Disallow: /donation/save/
 
