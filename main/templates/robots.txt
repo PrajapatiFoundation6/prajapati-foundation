@@ -4,4 +4,4 @@ Disallow: /cron/
 Disallow: /donation/create-order/
 Disallow: /donation/save/
 
-Sitemap: https://prajapatifoundation.in/sitemap.xml
+Sitemap: https://www.prajapatifoundation.in/sitemap.xml

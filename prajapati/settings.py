@@ -7,7 +7,7 @@ Copy .env.example to .env for local development.
 import os
 import warnings
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -44,17 +44,18 @@ if not SECRET_KEY:
     if DEBUG:
         SECRET_KEY = "django-insecure-local-dev-only-CHANGE-ME"
     else:
-        raise RuntimeError("DJANGO_SECRET_KEY is not set (Railway -> Variables).")
+        raise RuntimeError("DJANGO_SECRET_KEY is not set (Render -> Environment).")
 
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost" if DEBUG else "")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
-# Railway injects its public domain automatically; allow it so the app never
-# ends up with an empty ALLOWED_HOSTS (every request would return 400).
-_railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
-if _railway_domain:
-    ALLOWED_HOSTS.append(_railway_domain)
-    CSRF_TRUSTED_ORIGINS.append(f"https://{_railway_domain}")
+# Render injects its *.onrender.com hostname automatically; allow it so the
+# app never ends up with an empty ALLOWED_HOSTS (every request would be 400).
+# Custom domains still go in DJANGO_ALLOWED_HOSTS.
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_render_host}")
 
 
 # ── Apps / middleware ───────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ TEMPLATES = [
 
 
 # ── Database ────────────────────────────────────────────────────────────────
-# Railway's DATABASE_URL -> PostgreSQL; otherwise local SQLite.
+# Render's DATABASE_URL -> PostgreSQL; otherwise local SQLite.
 _database_url = os.environ.get("DATABASE_URL", "")
 
 if _database_url:
@@ -121,6 +122,10 @@ if _database_url:
             "CONN_HEALTH_CHECKS": True,    # drop dead connections safely
         }
     }
+    # External Render DB URLs need SSL; honour ?sslmode=... if the URL has it.
+    _sslmode = parse_qs(_u.query).get("sslmode", [""])[0]
+    if _sslmode:
+        DATABASES["default"]["OPTIONS"] = {"sslmode": _sslmode}
 else:
     DATABASES = {
         'default': {
@@ -220,7 +225,7 @@ X_FRAME_OPTIONS = "DENY"
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False   # JS (donation.js) must read it to send X-CSRFToken
 
-# Railway terminates HTTPS at its proxy; without this, SSL redirect loops forever.
+# Render terminates HTTPS at its proxy; without this, SSL redirect loops forever.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 if not DEBUG:
