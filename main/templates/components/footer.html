@@ -9,7 +9,7 @@
           <img src="{% static 'assets/images/logo.png' %}" alt="Prajapati Foundation Logo">
           <span>Prajapati Foundation</span>
         </a>
-        <p>Kumhar samaj ke utthan ke liye samarpit ek sanstha — shiksha, kala aur samajik ekta ke madhyam se.</p>
+        <p lang="hi">{{ site.name_hi }} · {{ site.city_hi }}, {{ site.state_hi }}</p>
       </div>
 
       <div class="footer-col">
@@ -37,9 +37,9 @@
         <h4>Contact</h4>
         <ul>
           <li><a href="https://wa.me/919839882438" target="_blank" rel="noopener">📱 WhatsApp</a></li>
-          <li><a href="mailto:info@prajapatifoundation.org">✉️ Email</a></li>
-          <li><a href="https://instagram.com" target="_blank" rel="noopener">📸 Instagram</a></li>
-          <li><a href="https://facebook.com" target="_blank" rel="noopener">👥 Facebook</a></li>
+          {% if site.email %}<li><a href="mailto:{{ site.email }}">✉️ Email</a></li>{% endif %}
+          {% if site.instagram_url %}<li><a href="{{ site.instagram_url }}" target="_blank" rel="noopener me">📸 Instagram</a></li>{% endif %}
+          {% if site.facebook_url %}<li><a href="{{ site.facebook_url }}" target="_blank" rel="noopener me">👥 Facebook</a></li>{% endif %}
         </ul>
       </div>
 

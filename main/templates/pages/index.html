@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Prajapati Foundation — Kumhar Samaj Ka Sahara{% endblock %}
-{% block meta_description %}<meta name="description" content="Prajapati Foundation — Kumhar (potter) samaj ke liye official sanstha. Education support, kala sanrakshan, artisan support. Donate ya volunteer banein Prajapati Foundation ke saath.">{% endblock %}
+{% block title %}{{ site.name }} | {{ site.name_hi }} — Kumhar Samaj, {{ site.city }}{% endblock %}
+{% block meta_description %}<meta name="description" content="{{ site.name }} ({{ site.name_hi }}), {{ site.city }} — Kumhar samaj ke liye official sanstha. Education support, kala sanrakshan, artisan support. Donate ya volunteer banein.">{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'assets/css/home.css' %}">
@@ -36,12 +36,13 @@
         <div class="hero-blob hero-blob-1" aria-hidden="true"></div>
         <div class="hero-blob hero-blob-2" aria-hidden="true"></div>
 
-        <div class="hero-eyebrow">Prajapati Foundation</div>
+        <div class="hero-eyebrow">{{ site.name }} · {{ site.name_hi }}</div>
         <h1>Ek Sangatit Samaj,<br>Ek <span class="accent-text">Sashakt</span> Bhavishya</h1>
         <p class="hero-sub">
           Shiksha, kala aur samajik ekta ke madhyam se Kumhar samaj ka utthan —
           har parivaar ko ek behtar kal.
         </p>
+        <p class="hero-sub" lang="hi" style="margin-top:-12px">{{ site.name_hi }} — कुम्हार समाज के उत्थान के लिए समर्पित संस्था, {{ site.city_hi }} ({{ site.state_hi }})।</p>
 
         <div class="hero-actions">
           <a href="{% url 'donation' %}" class="btn btn-amber">💚 Donate Now</a>
