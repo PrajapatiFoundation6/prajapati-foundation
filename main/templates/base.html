@@ -1,30 +1,25 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="{% block html_lang %}en-IN{% endblock %}">
+<html lang="en-IN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#1B4332">
-<meta name="robots" content="index, follow, max-image-preview:large">
-
-<title>{% block title %}Prajapati Foundation — Kumhar Samaj Ka Sahara{% endblock %}</title>
 
 {% block meta_description %}
-<meta name="description" content="Prajapati Foundation (प्रजापति फाउंडेशन) — Kumhar samaj ke utthan ke liye samarpit sanstha. Education support, scholarship guidance, artisan support aur community programs.">
+<meta name="description" content="Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha. Education, art preservation aur community programs.">
 {% endblock %}
 
 <link rel="canonical" href="https://www.prajapatifoundation.in{{ request.path }}">
-<link rel="icon" href="/favicon.ico" sizes="48x48">
-<link rel="icon" type="image/png" sizes="192x192" href="{% static 'assets/images/favicon-192.png' %}">
-<link rel="apple-touch-icon" href="{% static 'assets/images/apple-touch-icon.png' %}">
+<title>{% block title %}Prajapati Foundation{% endblock %}</title>
 
-<!-- Favicon (Google search results me logo isi se dikhta hai) -->
-<link rel="icon" type="image/png" href="{% static 'assets/images/logo.png' %}">
-<link rel="apple-touch-icon" href="{% static 'assets/images/logo.png' %}">
+<!-- Favicons: root_files folder se seedha serve hote hain -->
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 <!-- Open Graph (WhatsApp / Facebook share preview) -->
 <meta property="og:type" content="website">
-<meta property="og:locale" content="hi_IN">
 <meta property="og:site_name" content="Prajapati Foundation">
 <meta property="og:title" content="{% block og_title %}Prajapati Foundation — Kumhar Samaj Ka Sahara{% endblock %}">
 <meta property="og:description" content="{% block og_description %}Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha.{% endblock %}">
@@ -37,34 +32,30 @@
 <meta name="twitter:description" content="{% block twitter_description %}Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha.{% endblock %}">
 <meta name="twitter:image" content="https://www.prajapatifoundation.in{% static 'assets/images/logo.png' %}">
 
-<!-- Fonts: yahin se load hote hain (CSS ke @import hata do, wo page ko block karte the) -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Hind:wght@400;500;600;700&family=Baloo+2:wght@700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 {% block extra_css %}{% endblock %}
 
+<!-- JavaScript band ho to reveal sections gayab na rahein -->
+<noscript><style>.reveal{opacity:1 !important;transform:none !important;}</style></noscript>
 
-<!-- Structured data: Google ko organisation ki pehchaan -->
+<!-- Structured data for Google -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "NGO",
   "name": "Prajapati Foundation",
-  "alternateName": ["प्रजापति फाउंडेशन", "Prajapati Foundation Raebareli"],
+  "alternateName": "प्रजापति फाउंडेशन",
   "url": "https://www.prajapatifoundation.in",
   "logo": "https://www.prajapatifoundation.in{% static 'assets/images/logo.png' %}",
   "description": "Prajapati Foundation Kumhar (potter) samaj ke utthan ke liye samarpit ek sanstha hai — education, art preservation aur artisan support ke madhyam se.",
   "telephone": "+919839882438",
   "address": {
     "@type": "PostalAddress",
-    "addressLocality": "Raebareli",
-    "addressRegion": "Uttar Pradesh",
     "addressCountry": "IN"
   },
-  "areaServed": "IN",
   "sameAs": [
     "https://wa.me/919839882438"
   ]
