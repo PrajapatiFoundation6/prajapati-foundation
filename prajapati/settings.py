@@ -186,6 +186,7 @@ STORAGES = {
 
 # Missing static file se page 500 na ho
 WHITENOISE_MANIFEST_STRICT = False
+WHITENOISE_ROOT = BASE_DIR / "root_files"
 
 if USE_R2_STORAGE:
     R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "")
