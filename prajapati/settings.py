@@ -111,8 +111,6 @@ WSGI_APPLICATION = "prajapati.wsgi.application"
 
 # ── Database ───────────────────────────────────────────────────────────────
 # DATABASE_URL ho to Postgres (Neon), warna local SQLite.
-# conn_health_checks: Neon idle hone par connection band kar deta hai,
-# Django request se pehle check karke naya connection le leta hai.
 _database_url = os.environ.get("DATABASE_URL", "")
 
 if _database_url:
@@ -120,7 +118,7 @@ if _database_url:
     DATABASES = {
         "default": dj_database_url.parse(
             _database_url,
-            conn_max_age=600,
+            conn_max_age=60,
             conn_health_checks=True,
             ssl_require=env_bool("DATABASE_SSL_REQUIRE", default=not _is_local_db),
         )
@@ -186,6 +184,9 @@ STORAGES = {
     },
 }
 
+# Missing static file se page 500 na ho
+WHITENOISE_MANIFEST_STRICT = False
+
 if USE_R2_STORAGE:
     R2_ACCOUNT_ID = os.environ.get("R2_ACCOUNT_ID", "")
     R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
@@ -232,6 +233,12 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 200
 FILE_UPLOAD_PERMISSIONS = 0o644
 
 
+# ── News / scheme auto-refresh ─────────────────────────────────────────────
+# Purani settings (koi management command padh rahi ho to safe rahe)
+NEWS_AUTO_REFRESH_ENABLED = env_bool("NEWS_AUTO_REFRESH_ENABLED", default=True)
+NEWS_REFRESH_INTERVAL_HOURS = float(os.environ.get("NEWS_REFRESH_INTERVAL_HOURS", "6"))
+
+
 # ── Cron endpoints (cron-job.org) ──────────────────────────────────────────
 # POST /cron/fetch-news/ aur /cron/fetch-schemes/ par header X-Cron-Key: <CRON_SECRET>
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
@@ -261,14 +268,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_SSL_REDIRECT = env_bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
     SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    # Subdomains/preload undo karna mushkil hai, isliye default off
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool("DJANGO_HSTS_SUBDOMAINS", default=False)
+    SECURE_HSTS_PRELOAD = False
 
 
-# ── Logging ────────────────────────────────────────────────────────────────
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "root": {"handlers": ["console"], "level": "INFO"},
-}
+# ── Logging ────────────────────────────────────────────
