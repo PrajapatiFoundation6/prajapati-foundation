@@ -101,6 +101,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "main.context_processors.site",
             ],
         },
     },
@@ -244,6 +245,19 @@ NEWS_REFRESH_INTERVAL_HOURS = float(os.environ.get("NEWS_REFRESH_INTERVAL_HOURS"
 # POST /cron/fetch-news/ aur /cron/fetch-schemes/ par header X-Cron-Key: <CRON_SECRET>
 CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
+# ── Site identity (SEO: title, structured data, footer, social links) ──────
+SITE_URL = os.environ.get("SITE_URL", "https://www.prajapatifoundation.in").rstrip("/")
+SITE_NAME = "Prajapati Foundation"
+SITE_NAME_HI = "प्रजापति फाउंडेशन"
+SITE_CITY = os.environ.get("SITE_CITY", "Raebareli")
+SITE_CITY_HI = os.environ.get("SITE_CITY_HI", "रायबरेली")
+SITE_STATE = os.environ.get("SITE_STATE", "Uttar Pradesh")
+SITE_STATE_HI = os.environ.get("SITE_STATE_HI", "उत्तर प्रदेश")
+SITE_PHONE = os.environ.get("SITE_PHONE", "+919839882438")
+SITE_EMAIL = os.environ.get("SITE_EMAIL", "info@prajapatifoundation.org")
+# Apne profile ka exact URL browser address bar se copy karke Render/.env me daalo
+SITE_FACEBOOK_URL = os.environ.get("SITE_FACEBOOK_URL", "")
+SITE_INSTAGRAM_URL = os.environ.get("SITE_INSTAGRAM_URL", "")
 
 # ── Razorpay ───────────────────────────────────────────────────────────────
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
