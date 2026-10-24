@@ -21,14 +21,14 @@
 <section class="donation-section">
   <div class="container">
 
-    <div class="donation-thanks" id="donationThanks">
+    <div class="donation-thanks" id="donationThanks" role="status">
       🎉 Shukriya! Aapka donation safaltapoorvak mil gaya.
     </div>
 
     {% if not razorpay_key_id %}
     <div class="alert-banner alert-error" style="margin:0 0 24px">
-      ⚠️ Razorpay keys configure nahi hui hain. Admin ko <code>.env</code> file mein
-      <code>RAZORPAY_KEY_ID</code> aur <code>RAZORPAY_KEY_SECRET</code> set karna hoga.
+      ⚠️ Payments abhi configure nahi hain. Admin ko <code>RAZORPAY_KEY_ID</code> aur
+      <code>RAZORPAY_KEY_SECRET</code> set karna hoga.
     </div>
     {% endif %}
 
@@ -36,16 +36,19 @@
 
       <div class="donation-form-card reveal">
         <h2>Donation Karein</h2>
-        <p class="form-sub">100% secure · Razorpay powered</p>
+        <p class="form-sub">Secure payment · Razorpay powered</p>
+
+        {# Ye line CSRF cookie set karti hai, iske bina naye visitors ko 403 aata tha #}
+        {% csrf_token %}
 
         <div class="don-input-row" style="margin-bottom:14px">
           <div class="form-group">
             <label class="form-label" for="donor_name">Aapka Naam *</label>
-            <input class="input-field" type="text" id="donor_name" placeholder="Full name" autocomplete="name">
+            <input class="input-field" type="text" id="donor_name" maxlength="200" placeholder="Full name" autocomplete="name">
           </div>
           <div class="form-group">
             <label class="form-label" for="donor_email">Email</label>
-            <input class="input-field" type="email" id="donor_email" placeholder="Email" autocomplete="email" inputmode="email">
+            <input class="input-field" type="email" id="donor_email" maxlength="254" placeholder="Email" autocomplete="email" inputmode="email">
           </div>
         </div>
 
@@ -57,19 +60,24 @@
           <button type="button" class="preset-btn" onclick="setAmount(5100, this)">₹5100</button>
         </div>
 
-        <div class="form-group" style="margin-bottom:20px">
+        <div class="form-group" style="margin-bottom:16px">
           <label class="form-label" for="amount">Ya Custom Amount</label>
           <div class="amount-wrap">
             <span class="amount-prefix">₹</span>
-            <input class="input-field amount-input" type="number" id="amount" placeholder="0" inputmode="numeric" min="1">
+            <input class="input-field amount-input" type="number" id="amount" placeholder="0" inputmode="numeric" min="1" max="1000000" step="1">
           </div>
         </div>
 
-        <button class="btn btn-primary btn-full" id="payNowBtn" onclick="payNow()" {% if not razorpay_key_id %}disabled{% endif %}>
+        <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin-bottom:20px;cursor:pointer">
+          <input type="checkbox" id="show_public" style="margin-top:3px">
+          <span>Recent Supporters list me mera naam dikhayein</span>
+        </label>
+
+        <button type="button" class="btn btn-primary btn-full" id="payNowBtn" onclick="payNow()" {% if not razorpay_key_id %}disabled{% endif %}>
           Donate Now 💚
         </button>
         <p style="font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px">
-          🔒 Secure payment via Razorpay — amount verified server-side
+          🔒 Payment Razorpay ke secure checkout par hota hai
         </p>
       </div>
 
@@ -94,9 +102,9 @@
         </div>
 
         <div class="trust-badges">
-          <div class="trust-badge"><div class="tb-num">100%</div><div class="tb-label">Transparent</div></div>
-          <div class="trust-badge"><div class="tb-num">4+</div><div class="tb-label">Impact areas</div></div>
-          <div class="trust-badge"><div class="tb-num">500+</div><div class="tb-label">Lives touched</div></div>
+          <div class="trust-badge"><div class="tb-num">UPI</div><div class="tb-label">Card · NetBanking</div></div>
+          <div class="trust-badge"><div class="tb-num">SSL</div><div class="tb-label">Encrypted</div></div>
+          <div class="trust-badge"><div class="tb-num">4</div><div class="tb-label">Impact areas</div></div>
         </div>
       </div>
 
