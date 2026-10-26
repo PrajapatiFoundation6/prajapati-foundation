@@ -264,7 +264,7 @@ RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
 # Razorpay Dashboard -> Webhooks me jo secret set karo wahi yahan
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "")
-
+CRON_SECRET = os.environ.get("CRON_SECRET", "") 
 
 # ── Security headers ───────────────────────────────────────────────────────
 SECURE_CONTENT_TYPE_NOSNIFF = True

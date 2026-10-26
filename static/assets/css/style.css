@@ -526,3 +526,26 @@ code{
   border-radius:6px;
   font-size:13px;
 }
+/* ---- Pagination ---- */
+.pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  margin-top:40px;
+  flex-wrap:wrap;
+}
+.pg-btn{
+  padding:10px 20px;
+  border-radius:999px;
+  background:var(--bg-soft);
+  color:var(--green-700);
+  text-decoration:none;
+  font-size:14px;
+  font-weight:600;
+  border:1px solid var(--border);
+  transition:background .2s ease, transform .2s ease;
+}
+a.pg-btn:hover{ background:#e2f0e6; transform:translateY(-2px); }
+.pg-disabled{ opacity:0.4; cursor:not-allowed; }
+.pg-info{ font-size:13px; color:var(--ink-3); }

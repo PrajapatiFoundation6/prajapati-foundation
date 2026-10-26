@@ -115,6 +115,12 @@
       <p class="no-volunteer">Abhi koi volunteer approved nahi hai. <a href="{% url 'join' %}" style="color:var(--green-600);font-weight:600">Pehle banein →</a></p>
       {% endfor %}
     </div>
+    {% if volunteers|length >= 10 %}
+    <div style="text-align:center;margin-top:28px">
+    <a href="{% url 'volunteers' %}" class="btn btn-primary">Sabhi Volunteers Dekhein →</a>
+    </div>
+    {% endif %}
+    
   </div>
 </section>
 

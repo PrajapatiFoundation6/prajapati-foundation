@@ -31,6 +31,7 @@
       <p class="no-volunteer">Abhi koi volunteer approved nahi hai. <a href="{% url 'join' %}" style="color:var(--green-600);font-weight:600">Pehle banein →</a></p>
       {% endfor %}
     </div>
+    {% include 'components/pagination.html' %}
   </div>
 </section>
 
