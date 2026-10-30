@@ -389,8 +389,7 @@ def _run_in_background(fn, label):
     threading.Thread(target=_run, daemon=True).start()
 
 
-@csrf_exempt
-@require_POST
+
 def _fetch_news_and_cleanup():
     from . import news_fetcher
     from .cleanup import cleanup_old_entries
@@ -398,6 +397,9 @@ def _fetch_news_and_cleanup():
     stats = news_fetcher.fetch_news()
     stats["cleanup"] = cleanup_old_entries()
     return stats
+
+@csrf_exempt
+@require_POST
 def cron_fetch_news(request):
     """curl -X POST -H "X-Cron-Key: <CRON_SECRET>" https://prajapatifoundation.in/cron/fetch-news/"""
     if not _cron_authorized(request):
