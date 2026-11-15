@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 from django.shortcuts import render, redirect
 from django.urls import path
-
+from django.utils.html import format_html
 from .models import (
     ContactMessage,
     Donation,
@@ -10,6 +10,7 @@ from .models import (
     StudentHelp,
     Volunteer,
     GovScheme, SchemeUpdate,
+    DonationProof,
 )
 from .forms import BulkGalleryUploadForm
 
@@ -87,3 +88,38 @@ class DonationAdmin(admin.ModelAdmin):
     list_filter = ("show_public",)
     search_fields = ("name", "email", "payment_id")
     readonly_fields = ("payment_id", "razorpay_order_id", "created")
+@admin.register(DonationProof)
+class DonationProofAdmin(admin.ModelAdmin):
+    list_display = ("name", "amount", "phone", "transaction_id", "status", "wants_public", "show_public", "created")
+    list_filter = ("status", "wants_public", "show_public")
+    search_fields = ("name", "phone", "email", "transaction_id")
+    readonly_fields = ("created", "screenshot_preview", "photo_preview")
+    fields = ("status", "show_public", "admin_note", "name", "phone", "email", "amount",
+              "transaction_id", "wants_public", "created", "screenshot_preview", "photo_preview")
+    actions = ["verify_and_show", "verify_only", "reject"]
+
+    @admin.display(description="Payment screenshot")
+    def screenshot_preview(self, obj):
+        if not obj.pk or not obj.screenshot:
+            return "-"
+        return format_html('<a href="{0}" target="_blank"><img src="{0}" style="max-height:420px;border-radius:8px"></a>', obj.screenshot.url)
+
+    @admin.display(description="Donor photo")
+    def photo_preview(self, obj):
+        if not obj.pk or not obj.photo:
+            return "-"
+        return format_html('<img src="{}" style="max-height:160px;border-radius:50%">', obj.photo.url)
+
+    @admin.action(description="Verify + list me dikhao (sirf jinhone permission di)")
+    def verify_and_show(self, request, queryset):
+        queryset.update(status="verified")
+        shown = queryset.filter(wants_public=True).update(show_public=True)
+        self.message_user(request, f"{queryset.count()} verified, {shown} list me dikhaye gaye.")
+
+    @admin.action(description="Verify karo (list me mat dikhao)")
+    def verify_only(self, request, queryset):
+        queryset.update(status="verified", show_public=False)
+
+    @admin.action(description="Reject karo")
+    def reject(self, request, queryset):
+        queryset.update(status="rejected", show_public=False)

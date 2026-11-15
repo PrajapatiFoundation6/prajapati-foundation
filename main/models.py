@@ -1,7 +1,19 @@
+import uuid
+from pathlib import PurePath
+
 from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
 
 IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
+
+
+def donor_photo_path(instance, filename):
+    return f"donors/{uuid.uuid4().hex}{PurePath(filename).suffix.lower()}"
+
+
+def donor_proof_path(instance, filename):
+    # random naam, taaki payment screenshot ka URL guess na ho sake
+    return f"donation_proofs/{uuid.uuid4().hex}{PurePath(filename).suffix.lower()}"
 
 
 class GalleryImage(models.Model):
@@ -79,6 +91,7 @@ class ContactMessage(models.Model):
 
 
 class Donation(models.Model):
+    """Razorpay-based donations (abhi use me nahi, KYC ke baad wapas use hoga)."""
     name = models.CharField(max_length=200)
     email = models.EmailField()
     amount = models.IntegerField()
@@ -89,6 +102,45 @@ class Donation(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class DonationProof(models.Model):
+    """Manual UPI QR donations: donor details + screenshot, admin verify karta hai."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("verified", "Verified"),
+        ("rejected", "Rejected"),
+    ]
+
+    name = models.CharField(max_length=200)
+    phone = models.CharField(max_length=15)
+    email = models.EmailField(blank=True)
+    amount = models.PositiveIntegerField(validators=[MinValueValidator(1)])
+    transaction_id = models.CharField(max_length=100, blank=True, default="")
+
+    photo = models.ImageField(
+        upload_to=donor_photo_path, blank=True,
+        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
+    )
+    screenshot = models.ImageField(
+        upload_to=donor_proof_path,
+        validators=[FileExtensionValidator(IMAGE_EXTENSIONS)],
+    )
+
+    wants_public = models.BooleanField(default=False)   # donor ki request
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending", db_index=True)
+    show_public = models.BooleanField(default=False)    # admin decide karega
+    admin_note = models.CharField(max_length=300, blank=True, default="")
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created']
+
+    def __str__(self):
+        return f"{self.name} — ₹{self.amount} ({self.status})"
+
+
 class GovScheme(models.Model):
     """Curated (admin-managed) list of real government schemes shown on
     the Artisan Support page. Manually verified so links are always
@@ -137,12 +189,13 @@ class SchemeUpdate(models.Model):
     def __str__(self):
         return self.title
 
+
 class News(models.Model):
 
     title = models.CharField(max_length=800)
     description = models.TextField(blank=True)
     image = models.URLField(blank=True)
-    source_link = models.URLField(unique=True,max_length=800)
+    source_link = models.URLField(unique=True, max_length=800)
     category = models.CharField(max_length=100, blank=True, db_index=True)
     published_date = models.DateTimeField(db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -152,4 +205,3 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
-    

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}Donate | Prajapati Foundation{% endblock %}
-{% block meta_description %}<meta name="description" content="Prajapati Foundation ko secure Razorpay payment se donate karein. Aapka yogdaan Kumhar samaj ke education, artisan support aur community programs mein jaata hai.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Prajapati Foundation ko UPI QR se donate karein. Aapka yogdaan Kumhar samaj ke education, artisan support aur community programs mein jaata hai.">{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'assets/css/donation.css' %}">
@@ -20,92 +20,114 @@
 
 <section class="donation-section">
   <div class="container">
+    <div class="donation-layout manual-layout">
 
-    <div class="donation-thanks" id="donationThanks" role="status">
-      🎉 Shukriya! Aapka donation safaltapoorvak mil gaya.
-    </div>
+      <!-- LEFT: Step 1 — pay -->
+      <div class="pay-col">
+        <div class="donation-form-card reveal">
+          <span class="step-badge">Step 1</span>
+          <h2>QR Scan Karke Pay Karein</h2>
+          <p class="form-sub">GPay, PhonePe, Paytm, BHIM — kisi bhi UPI app se</p>
 
-    {% if not razorpay_key_id %}
-    <div class="alert-banner alert-error" style="margin:0 0 24px">
-      ⚠️ Payments abhi configure nahi hain. Admin ko <code>RAZORPAY_KEY_ID</code> aur
-      <code>RAZORPAY_KEY_SECRET</code> set karna hoga.
-    </div>
-    {% endif %}
-
-    <div class="donation-layout">
-
-      <div class="donation-form-card reveal">
-        <h2>Donation Karein</h2>
-        <p class="form-sub">Secure payment · Razorpay powered</p>
-
-        {# Ye line CSRF cookie set karti hai, iske bina naye visitors ko 403 aata tha #}
-        {% csrf_token %}
-
-        <div class="don-input-row" style="margin-bottom:14px">
-          <div class="form-group">
-            <label class="form-label" for="donor_name">Aapka Naam *</label>
-            <input class="input-field" type="text" id="donor_name" maxlength="200" placeholder="Full name" autocomplete="name">
+          <div class="qr-box">
+            <img class="qr-img" src="{% static 'assets/images/donation-qr.png' %}" alt="Prajapati Foundation UPI QR" width="320" height="320">
           </div>
-          <div class="form-group">
-            <label class="form-label" for="donor_email">Email</label>
-            <input class="input-field" type="email" id="donor_email" maxlength="254" placeholder="Email" autocomplete="email" inputmode="email">
+          <p class="qr-merchant">PRAJAPATI FOUNDATION</p>
+
+          <div class="upi-row">
+            <span>UPI ID:</span>
+            <strong id="upiId">9839882438m@pnb</strong>
+            <button type="button" class="copy-btn" id="copyUpi">Copy</button>
           </div>
+
+          <a href="upi://pay?pa=9839882438m@pnb&amp;pn=Prajapati%20Foundation&amp;cu=INR" class="btn btn-amber btn-full upi-open-btn">
+            📱 UPI App Se Pay Karein
+          </a>
+          <p class="qr-hint">Payment ke baad <strong>screenshot zaroor save karein</strong> aur Step 2 ka form bharein.</p>
         </div>
 
-        <p class="preset-label">Quick Amount Select</p>
-        <div class="preset-grid">
-          <button type="button" class="preset-btn" onclick="setAmount(501, this)">₹501</button>
-          <button type="button" class="preset-btn" onclick="setAmount(1100, this)">₹1100</button>
-          <button type="button" class="preset-btn" onclick="setAmount(2100, this)">₹2100</button>
-          <button type="button" class="preset-btn" onclick="setAmount(5100, this)">₹5100</button>
-        </div>
-
-        <div class="form-group" style="margin-bottom:16px">
-          <label class="form-label" for="amount">Ya Custom Amount</label>
-          <div class="amount-wrap">
-            <span class="amount-prefix">₹</span>
-            <input class="input-field amount-input" type="number" id="amount" placeholder="0" inputmode="numeric" min="1" max="1000000" step="1">
+        <div class="donation-info-card reveal">
+          <h3>Aapka Donation Kahan Jaata Hai</h3>
+          <div class="use-item">
+            <div class="use-icon">🎓</div>
+            <div class="use-body"><h4>Education Support</h4><p>Scholarship awareness, career guidance aur needy students ki madad.</p></div>
+          </div>
+          <div class="use-item">
+            <div class="use-icon">🏡</div>
+            <div class="use-body"><h4>Community Help</h4><p>Samaj ke zarooratmand logo ki aarthik aur samajik madad.</p></div>
+          </div>
+          <div class="use-item">
+            <div class="use-icon">🧱</div>
+            <div class="use-body"><h4>Artisan Support</h4><p>Kumhar artisans ko tools, training aur market access.</p></div>
+          </div>
+          <div class="use-item">
+            <div class="use-icon">❤️</div>
+            <div class="use-body"><h4>Emergency Relief</h4><p>Crisis situations mein immediate family support.</p></div>
           </div>
         </div>
-
-        <label style="display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--ink-2);margin-bottom:20px;cursor:pointer">
-          <input type="checkbox" id="show_public" style="margin-top:3px">
-          <span>Recent Supporters list me mera naam dikhayein</span>
-        </label>
-
-        <button type="button" class="btn btn-primary btn-full" id="payNowBtn" onclick="payNow()" {% if not razorpay_key_id %}disabled{% endif %}>
-          Donate Now 💚
-        </button>
-        <p style="font-size:12px;color:var(--ink-3);text-align:center;margin-top:10px">
-          🔒 Payment Razorpay ke secure checkout par hota hai
-        </p>
       </div>
 
-      <div class="donation-info-card reveal">
-        <h3>Aapka Donation Kahan Jaata Hai</h3>
+      <!-- RIGHT: Step 2 — details -->
+      <div class="donation-form-card reveal" id="donation-form">
+        <span class="step-badge">Step 2</span>
+        <h2>Donation Ki Details Bhejein</h2>
+        <p class="form-sub">Hamari team payment verify karegi. Verify hone ke baad aap Recent Supporters me dikhenge.</p>
 
-        <div class="use-item">
-          <div class="use-icon">🎓</div>
-          <div class="use-body"><h4>Education Support</h4><p>Scholarship awareness, career guidance aur needy students ki madad.</p></div>
-        </div>
-        <div class="use-item">
-          <div class="use-icon">🏡</div>
-          <div class="use-body"><h4>Community Help</h4><p>Samaj ke zarooratmand logo ki aarthik aur samajik madad.</p></div>
-        </div>
-        <div class="use-item">
-          <div class="use-icon">🧱</div>
-          <div class="use-body"><h4>Artisan Support</h4><p>Kumhar artisans ko tools, training aur market access.</p></div>
-        </div>
-        <div class="use-item">
-          <div class="use-icon">❤️</div>
-          <div class="use-body"><h4>Emergency Relief</h4><p>Crisis situations mein immediate family support.</p></div>
-        </div>
+        <form method="POST" enctype="multipart/form-data" class="proof-form" novalidate
+              data-has-errors="{% if form.errors %}1{% else %}0{% endif %}">
+          {% csrf_token %}
 
-        <div class="trust-badges">
-          <div class="trust-badge"><div class="tb-num">UPI</div><div class="tb-label">Card · NetBanking</div></div>
-          <div class="trust-badge"><div class="tb-num">SSL</div><div class="tb-label">Encrypted</div></div>
-          <div class="trust-badge"><div class="tb-num">4</div><div class="tb-label">Impact areas</div></div>
-        </div>
+          <div class="don-input-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.name.id_for_label }}">Aapka Naam *</label>
+              {{ form.name }}
+              {% if form.name.errors %}<p class="field-error-msg">{{ form.name.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.phone.id_for_label }}">Phone *</label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<p class="field-error-msg">{{ form.phone.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="don-input-row">
+            <div class="form-group">
+              <label class="form-label" for="{{ form.amount.id_for_label }}">Amount (₹) *</label>
+              {{ form.amount }}
+              {% if form.amount.errors %}<p class="field-error-msg">{{ form.amount.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="{{ form.transaction_id.id_for_label }}">UTR / Transaction ID</label>
+              {{ form.transaction_id }}
+              {% if form.transaction_id.errors %}<p class="field-error-msg">{{ form.transaction_id.errors.0 }}</p>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<p class="field-error-msg">{{ form.email.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.screenshot.id_for_label }}">Payment Screenshot *</label>
+            {{ form.screenshot }}
+            {% if form.screenshot.errors %}<p class="field-error-msg">{{ form.screenshot.errors.0 }}</p>{% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="{{ form.photo.id_for_label }}">Aapki Photo (list me dikhane ke liye)</label>
+            {{ form.photo }}
+            {% if form.photo.errors %}<p class="field-error-msg">{{ form.photo.errors.0 }}</p>{% endif %}
+          </div>
+
+          <label class="public-check">
+            {{ form.wants_public }}
+            <span>Mera naam aur photo Recent Supporters list me dikhayein</span>
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-full">Details Submit Karein 💚</button>
+        </form>
       </div>
 
     </div>
@@ -122,7 +144,9 @@
     <div class="donors-grid reveal">
       {% for d in donors %}
       <div class="donor-card">
-        <div class="donor-avatar">{{ d.name|first|upper }}</div>
+        <div class="donor-avatar">
+          {% if d.photo %}<img src="{{ d.photo.url }}" alt="{{ d.name }}" loading="lazy">{% else %}{{ d.name|first|upper }}{% endif %}
+        </div>
         <p>{{ d.name|truncatechars:14 }}</p>
       </div>
       {% empty %}
@@ -134,9 +158,71 @@
   </div>
 </section>
 
+{% if messages and not form.errors %}
+<div class="success-popup" id="successPopup">
+  <div class="success-box">
+    <div class="popup-icon">🙏</div>
+    <h3>Dhanyavaad!</h3>
+    <p>Aapki donation details mil gayi. Hamari team payment verify karegi — verify hone ke baad (agar aapne permission di hai) aap Recent Supporters me dikhenge.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('successPopup').style.display='none'">OK</button>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
-<script src="{% static 'assets/js/donation.js' %}" defer></script>
+<script>
+(function(){
+  var MAX_BYTES = 5 * 1024 * 1024;
+
+  // ---- UPI ID copy ----
+  var copyBtn = document.getElementById('copyUpi');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', function(){
+      var id = document.getElementById('upiId').textContent.trim();
+      function done(){
+        copyBtn.textContent = 'Copied ✓';
+        setTimeout(function(){ copyBtn.textContent = 'Copy'; }, 1800);
+      }
+      function fallback(){ window.prompt('UPI ID copy karein:', id); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(done, fallback);
+      } else {
+        fallback();
+      }
+    });
+  }
+
+  var form = document.querySelector('.proof-form');
+  if (!form) return;
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var submitLabel = submitBtn ? submitBtn.textContent : '';
+
+  // ---- 5MB se badi file turant reject ----
+  form.querySelectorAll('input[type="file"]').forEach(function(input){
+    input.addEventListener('change', function(){
+      var file = this.files && this.files[0];
+      if (file && file.size > MAX_BYTES) {
+        alert('File 5MB se chhoti honi chahiye.');
+        this.value = '';
+      }
+    });
+  });
+
+  // ---- Double submit block ----
+  form.addEventListener('submit', function(){
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Bhej rahe hain...'; }
+  });
+  window.addEventListener('pageshow', function(){
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = submitLabel; }
+  });
+
+  // ---- Error aaye to form tak scroll ----
+  if (form.dataset.hasErrors === '1') {
+    var box = document.getElementById('donation-form');
+    if (box) box.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+})();
+</script>
 {% endblock %}

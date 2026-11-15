@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.validators import MaxLengthValidator, RegexValidator
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from .models import ContactMessage, StudentHelp, Volunteer
+from .models import ContactMessage, DonationProof, StudentHelp, Volunteer
 
 PHONE_DB_MAX = 15  # models me phone max_length=15 hai
 
@@ -191,3 +191,53 @@ class BulkGalleryUploadForm(forms.Form):
         widget=MultipleFileInput(attrs={"multiple": True, "accept": "image/*"}),
         label="Select multiple images",
     )
+class DonationProofForm(BasePhoneForm):
+    class Meta:
+        model = DonationProof
+        fields = ["name", "phone", "email", "amount", "transaction_id",
+                  "photo", "screenshot", "wants_public"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "input-field", "placeholder": "Aapka poora naam", "autocomplete": "name"}),
+            "phone": forms.TextInput(attrs={"class": "input-field", "placeholder": "Mobile number", "autocomplete": "tel", "inputmode": "tel"}),
+            "email": forms.EmailInput(attrs={"class": "input-field", "placeholder": "Email (optional)", "autocomplete": "email"}),
+            "amount": forms.NumberInput(attrs={"class": "input-field", "placeholder": "Kitna donate kiya? (₹)", "min": "1", "inputmode": "numeric"}),
+            "transaction_id": forms.TextInput(attrs={"class": "input-field", "placeholder": "UTR / Transaction ID (optional)"}),
+            "photo": forms.FileInput(attrs={"class": "input-field", "accept": "image/jpeg,image/png,image/webp"}),
+            "screenshot": forms.FileInput(attrs={"class": "input-field", "accept": "image/jpeg,image/png,image/webp"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = False
+        self.fields["photo"].required = False
+
+    def clean_amount(self):
+        amount = self.cleaned_data.get("amount")
+        if amount is None or amount < 1 or amount > 1_000_000:
+            raise forms.ValidationError("₹1 se ₹10,00,000 ke beech amount daalein.")
+        return amount
+
+    def clean_transaction_id(self):
+        return (self.cleaned_data.get("transaction_id") or "").strip()[:100]
+
+    def clean_screenshot(self):
+        shot = self.cleaned_data.get("screenshot")
+        if not shot:
+            raise forms.ValidationError("Payment ka screenshot upload karein.")
+        if shot.size > MAX_PHOTO_SIZE:
+            raise forms.ValidationError("Screenshot 5MB se chhota hona chahiye.")
+        return sanitize_image(shot)
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get("photo")
+        if not photo:
+            return None
+        if photo.size > MAX_PHOTO_SIZE:
+            raise forms.ValidationError("Photo 5MB se chhoti honi chahiye.")
+        return sanitize_image(photo)
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("wants_public") and not cleaned.get("photo") and "photo" not in self.errors:
+            self.add_error("photo", "Naam list me dikhane ke liye apni photo upload karein.")
+        return cleaned

@@ -14,8 +14,8 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 
-from .forms import ContactForm, StudentHelpForm, VolunteerForm
-from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer
+from .forms import ContactForm, DonationProofForm, StudentHelpForm, VolunteerForm
+from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer,DonationProof
 from .ratelimit import ratelimit
 
 logger = logging.getLogger(__name__)
@@ -188,69 +188,23 @@ def _record_donation(order, payment_id, fallback=None):
 
 
 @ensure_csrf_cookie
+@ratelimit("donation_proof", limit=10, window=3600)
 def donation(request):
-    donors = Donation.objects.filter(show_public=True).order_by("-created")[:12]
-    return render(request, "pages/donation.html", {
-        "donors": donors,
-        "razorpay_key_id": settings.RAZORPAY_KEY_ID,
-    })
+    if request.method == "POST":
+        form = DonationProofForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Donation details submit ho gayi")
+            return redirect("donation")
+        messages.error(request, "Kuch fields sahi se bharein aur dobara try karein.")
+    else:
+        form = DonationProofForm()
 
+    donors = DonationProof.objects.filter(
+        status="verified", show_public=True
+    ).order_by("-created")[:12]
 
-@ratelimit("create_order", limit=20, window=600, as_json=True)
-@require_POST
-def donation_create_order(request):
-    if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
-        logger.error("Razorpay keys configured nahi hain.")
-        return JsonResponse({"ok": False, "error": "Payments abhi available nahi hain."}, status=503)
-
-    data = _json_body(request)
-    if data is None:
-        return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
-
-    try:
-        amount = int(data.get("amount", 0))
-    except (ValueError, TypeError, OverflowError):
-        return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
-
-    if amount < 1 or amount > MAX_DONATION:
-        return JsonResponse({"ok": False, "error": "Please enter a valid amount."}, status=400)
-
-    name = str(data.get("name") or "").strip()[:200]
-    if len(name) < 2:
-        return JsonResponse({"ok": False, "error": "Please enter your name."}, status=400)
-    email = str(data.get("email") or "").strip()[:254]
-
-    try:
-        resp = http.post(
-            f"{RZP_API}/orders",
-            auth=_rzp_auth(),
-            json={
-                "amount": amount * 100,  # paise
-                "currency": "INR",
-                "payment_capture": 1,    # auto-capture, taaki payment.captured webhook aaye
-                "notes": {
-                    "name": name,
-                    "email": email,
-                    "show_public": "1" if data.get("show_public") is True else "0",
-                },
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
-        order = resp.json()
-    except (http.RequestException, ValueError) as exc:
-        logger.error("Razorpay order creation failed: %s", exc)
-        return JsonResponse({"ok": False, "error": "Could not start payment. Try again."}, status=502)
-
-    return JsonResponse({
-        "ok": True,
-        "order_id": order["id"],
-        "amount": order["amount"],
-        "currency": order["currency"],
-        "key": settings.RAZORPAY_KEY_ID,
-    })
-
-
+    return render(request, "pages/donation.html", {"form": form, "donors": donors})
 @require_POST
 def donation_save(request):
     data = _json_body(request)
@@ -406,7 +360,7 @@ def cron_fetch_news(request):
         return JsonResponse({"ok": False, "error": "Unauthorized"}, status=403)
 
     from . import news_fetcher
-    _run_in_background(news_fetcher.fetch_news, "News fetch")
+    _run_in_background(news_fetcher.fetch_news, "News fetch + cleanup")
     return JsonResponse({"ok": True, "started": True}, status=202)
 
 
