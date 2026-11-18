@@ -80,14 +80,6 @@ class VolunteerAdmin(admin.ModelAdmin):
     @admin.action(description="Mark selected volunteers as approved")
     def approve_volunteers(self, request, queryset):
         queryset.update(approved=True)
-
-
-@admin.register(Donation)
-class DonationAdmin(admin.ModelAdmin):
-    list_display = ("name", "amount", "payment_id", "show_public", "created")
-    list_filter = ("show_public",)
-    search_fields = ("name", "email", "payment_id")
-    readonly_fields = ("payment_id", "razorpay_order_id", "created")
 @admin.register(DonationProof)
 class DonationProofAdmin(admin.ModelAdmin):
     list_display = ("name", "amount", "phone", "transaction_id", "status", "wants_public", "show_public", "created")
