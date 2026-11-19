@@ -396,3 +396,14 @@ def artisan_support(request):
         "categories": GovScheme.CATEGORY_CHOICES,
         "active_category": category,
     })
+# views.py
+from django.views.decorators.cache import cache_page
+
+@cache_page(60 * 15)
+def home(request): ...
+
+@cache_page(60 * 15)
+def news(request): ...
+
+@cache_page(60 * 15)
+def gallery(request): ...
