@@ -549,3 +549,26 @@ code{
 a.pg-btn:hover{ background:#e2f0e6; transform:translateY(-2px); }
 .pg-disabled{ opacity:0.4; cursor:not-allowed; }
 .pg-info{ font-size:13px; color:var(--ink-3); }
+
+
+/* ---- Language toggle ---- */
+.i18n-pending body{ visibility:hidden; }
+.nav-actions{ display:flex; align-items:center; gap:12px; }
+.lang-toggle{
+  display:inline-flex; padding:3px; border-radius:999px;
+  background:var(--bg-soft); border:1px solid var(--border);
+}
+.lang-btn{
+  border:none; background:transparent; padding:6px 12px; border-radius:999px;
+  font-family:inherit; font-size:13px; font-weight:600; color:var(--ink-2);
+  cursor:pointer; transition:all .2s ease;
+}
+.lang-btn.active{ background:linear-gradient(135deg,var(--green-600),var(--green-500)); color:#fff; }
+
+@media (max-width:560px){
+  .nav-actions{ gap:8px; }
+  .lang-btn{ padding:5px 9px; font-size:12px; }
+  .nav-donate{ padding:8px 14px; font-size:13px; }
+  .navbar .logo{ font-size:16px; gap:8px; }
+  .logo-sub{ display:none; }
+}

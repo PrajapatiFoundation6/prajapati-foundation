@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#1B4332">
 
 {% block meta_description %}
-<meta name="description" content="Prajapati Foundation Raebareli — Kumhar samaj ke utthan ke liye samarpit ek sanstha. Education, art preservation aur community programs.">
+<meta name="description" content="Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha. Education, art preservation aur community programs.">
 {% endblock %}
 
 <link rel="canonical" href="https://www.prajapatifoundation.in{{ request.path }}">
@@ -21,7 +21,7 @@
 <!-- Open Graph (WhatsApp / Facebook share preview) -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Prajapati Foundation">
-<meta property="og:title" content="{% block og_title %}Prajapati Foundation Raebareli — Kumhar Samaj Ka Sahara{% endblock %}">
+<meta property="og:title" content="{% block og_title %}Prajapati Foundation — Kumhar Samaj Ka Sahara{% endblock %}">
 <meta property="og:description" content="{% block og_description %}Prajapati Foundation — Kumhar samaj ke utthan ke liye samarpit ek sanstha.{% endblock %}">
 <meta property="og:image" content="https://www.prajapatifoundation.in{% static 'assets/images/logo.png' %}">
 <meta property="og:url" content="https://www.prajapatifoundation.in{{ request.path }}">
@@ -34,6 +34,10 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!--  language flash rokne wala script + fonts  -->
+<script>document.documentElement.classList.add('i18n-pending');setTimeout(function(){document.documentElement.classList.remove('i18n-pending')},2000);</script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Hind:wght@400;500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 {% block extra_css %}{% endblock %}
@@ -87,5 +91,8 @@
 </script>
 
 {% block extra_js %}{% endblock %}
+
+<!--  translator script  -->
+<script src="{% static 'assets/js/i18n.js' %}"></script>
 </body>
 </html>

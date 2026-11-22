@@ -23,7 +23,12 @@
       </ul>
     </nav>
 
-    <a href="{% url 'donation' %}" class="nav-donate">💚 Donate</a>
+    <div class="nav-actions">
+  <div class="lang-toggle" role="group" aria-label="Language" data-no-i18n>
+    <button type="button" class="lang-btn" data-lang="hi" aria-pressed="false">हिं</button>
+    <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+  </div>
+</div>
 
   </div>
 </header>
@@ -35,9 +40,6 @@
   </a>
   <a href="{% url 'education' %}" class="bnav-item {% if request.resolver_match.url_name == 'education' %}active{% endif %}">
     <span class="bnav-icon">🎓</span><span>Education</span>
-  </a>
-  <a href="{% url 'donation' %}"  class="bnav-item {% if request.resolver_match.url_name == 'donation' %}active{% endif %}">
-    <span class="bnav-icon">💚</span><span>Donate</span>
   </a>
   <a href="{% url 'news' %}"      class="bnav-item {% if request.resolver_match.url_name == 'news' %}active{% endif %}">
     <span class="bnav-icon">📰</span><span>News</span>

@@ -400,7 +400,9 @@ def artisan_support(request):
 from django.views.decorators.cache import cache_page
 
 @cache_page(60 * 15)
-def home(request): ...
+def home(request):
+    images = list(GalleryImage.objects.order_by("-uploaded_at")[:HOME_CAROUSEL_LIMIT])
+    return render(request, "pages/index.html", {"images": images})   # <- ye return hona zaroori hai
 
 @cache_page(60 * 15)
 def news(request): ...
