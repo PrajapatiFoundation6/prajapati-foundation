@@ -205,3 +205,7 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+    @property
+    def source_name(self):
+        from .news_sources import publisher_name
+        return publisher_name(self.source_link)

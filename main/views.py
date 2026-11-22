@@ -3,8 +3,10 @@ import hmac
 import json
 import logging
 import threading
-
 import requests as http
+from datetime import timedelta
+from django.utils import timezone
+from .news_sources import CATEGORY_ORDER, RETENTION_DAYS
 from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -13,7 +15,6 @@ from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
-
 from .forms import ContactForm, DonationProofForm, StudentHelpForm, VolunteerForm
 from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer,DonationProof
 from .ratelimit import ratelimit
@@ -292,34 +293,40 @@ def donation_webhook(request):
 # ─────────────────────────────────────────────────────────────────────────
 # News
 #
-# Auto-fetch request ke andar nahi chalta. External cron (cron-job.org) se
-# neeche wale /cron/ endpoints ko POST karo (header: X-Cron-Key), ya
-# manually: python manage.py fetch_news
+# News sirf Prajapati samaj ki hai aur sirf pichle RETENTION_DAYS (15) din ki.
+# Fetch + cleanup request ke andar nahi chalta: cron-job.org se
+#   POST /cron/fetch-news/   (header: X-Cron-Key: <CRON_SECRET>)
+# ya manually:  python manage.py fetch_news
 # ─────────────────────────────────────────────────────────────────────────
 
-def news(request):
-    """URL: /news/?category=<category name>"""
-    category = request.GET.get("category", "").strip()
+NEWS_LIST_LIMIT = 60
 
-    qs = News.objects.order_by("-published_date")
+_job_locks = {"news": threading.Lock(), "schemes": threading.Lock()}
+
+
+def news(request):
+    """URL: /news/?category=<category name>   (sirf pichle 15 din ki news)"""
+    category = request.GET.get("category", "").strip()
+    since = timezone.now() - timedelta(days=RETENTION_DAYS)
+
+    base_qs = News.objects.filter(published_date__gte=since)
+
+    qs = base_qs.order_by("-published_date")
     if category:
         qs = qs.filter(category=category)
+    news_list = list(qs[:NEWS_LIST_LIMIT])
 
-    news_list = list(qs[:30])
-    trending = list(News.objects.order_by("-published_date")[:6])
-
-    categories = (
-        News.objects.exclude(category="")
-        .values_list("category", flat=True)
-        .distinct()
-        .order_by("category")
+    existing = set(
+        base_qs.exclude(category="").order_by().values_list("category", flat=True).distinct()
     )
+    categories = [c for c in CATEGORY_ORDER if c in existing]
+    categories += sorted(existing - set(CATEGORY_ORDER))
 
     return render(request, "pages/news.html", {
         "news_list": news_list,
-        "trending": trending,
         "categories": categories,
         "active_category": category,
+        "retention_days": RETENTION_DAYS,
     })
 
 
@@ -330,8 +337,15 @@ def _cron_authorized(request) -> bool:
     return bool(secret) and _same(key, secret)
 
 
-def _run_in_background(fn, label):
-    """Kaam thread me chalao taaki cron ko turant response mile (gunicorn timeout se bachav)."""
+def _run_in_background(fn, label, lock) -> bool:
+    """
+    Kaam thread me chalao taaki cron ko turant response mile. Lock se ek hi
+    type ke do job ek saath nahi chalte. Returns True agar job start hua.
+    """
+    if not lock.acquire(blocking=False):
+        logger.warning("%s already running — skipped", label)
+        return False
+
     def _run():
         try:
             logger.info("%s finished: %s", label, fn())
@@ -339,43 +353,46 @@ def _run_in_background(fn, label):
             logger.exception("%s failed", label)
         finally:
             connections.close_all()   # thread ka DB connection band
+            lock.release()
 
-    threading.Thread(target=_run, daemon=True).start()
+    try:
+        threading.Thread(target=_run, daemon=True).start()
+    except Exception:
+        lock.release()
+        raise
+    return True
 
 
+def _news_job():
+    from . import news_fetcher      # import yahan: import error ho to bhi cron 500 na de
+    return news_fetcher.run_news_job()
 
-def _fetch_news_and_cleanup():
-    from . import news_fetcher
-    from .cleanup import cleanup_old_entries
 
-    stats = news_fetcher.fetch_news()
-    stats["cleanup"] = cleanup_old_entries()
-    return stats
+def _scheme_job():
+    from . import scheme_fetcher
+    return scheme_fetcher.fetch_scheme_updates()
+
 
 @csrf_exempt
 @require_POST
 def cron_fetch_news(request):
-    """curl -X POST -H "X-Cron-Key: <CRON_SECRET>" https://prajapatifoundation.in/cron/fetch-news/"""
+    """curl -X POST -H "X-Cron-Key: <CRON_SECRET>" https://www.prajapatifoundation.in/cron/fetch-news/"""
     if not _cron_authorized(request):
         return JsonResponse({"ok": False, "error": "Unauthorized"}, status=403)
 
-    from . import news_fetcher
-    _run_in_background(news_fetcher.fetch_news, "News fetch + cleanup")
-    return JsonResponse({"ok": True, "started": True}, status=202)
+    started = _run_in_background(_news_job, "News job", _job_locks["news"])
+    return JsonResponse({"ok": True, "started": started}, status=202 if started else 200)
 
 
 @csrf_exempt
 @require_POST
 def cron_fetch_schemes(request):
-    """curl -X POST -H "X-Cron-Key: <CRON_SECRET>" https://prajapatifoundation.in/cron/fetch-schemes/"""
+    """curl -X POST -H "X-Cron-Key: <CRON_SECRET>" https://www.prajapatifoundation.in/cron/fetch-schemes/"""
     if not _cron_authorized(request):
         return JsonResponse({"ok": False, "error": "Unauthorized"}, status=403)
 
-    from . import scheme_fetcher
-    _run_in_background(scheme_fetcher.fetch_scheme_updates, "Scheme fetch")
-    return JsonResponse({"ok": True, "started": True}, status=202)
-
-
+    started = _run_in_background(_scheme_job, "Scheme fetch", _job_locks["schemes"])
+    return JsonResponse({"ok": True, "started": started}, status=202 if started else 200)
 # ─────────────────────────────────────────────────────────────────────────
 # Artisan Support
 # ─────────────────────────────────────────────────────────────────────────
@@ -398,14 +415,6 @@ def artisan_support(request):
     })
 # views.py
 from django.views.decorators.cache import cache_page
-
 @cache_page(60 * 15)
-def home(request):
-    images = list(GalleryImage.objects.order_by("-uploaded_at")[:HOME_CAROUSEL_LIMIT])
-    return render(request, "pages/index.html", {"images": images})   # <- ye return hona zaroori hai
-
-@cache_page(60 * 15)
-def news(request): ...
-
 @cache_page(60 * 15)
 def gallery(request): ...

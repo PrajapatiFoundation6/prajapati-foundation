@@ -1,106 +1,131 @@
 """
 news_fetcher.py — Prajapati Foundation
-Google News RSS se India-focused Prajapati/Kumhar/mitti-kala news fetch karta hai.
+=======================================
+SIRF Prajapati samaj ki news, kayi akhbaaron se (Dainik Bhaskar, Dainik Jagran,
+Amar Ujala, Hindustan, Patrika ... + Raebareli par khaas focus).
 
-Render free tier ke liye design:
-  - cron-job.org ka timeout chhota hota hai, isliye ek run me max_new articles
-    aur time_budget tak hi kaam hota hai. Baaki articles agle run me aate hain.
-  - Har network call par timeout, response size cap, aur SSRF guard.
-  - Dedupe decode se PEHLE hota hai (title + link), taaki purane articles ke
-    liye dobara decode/image-fetch na ho.
+Flow (ek run):
+  1. Saari Google News RSS feeds parallel me (config: news_sources.build_feeds()).
+  2. Har entry: RETENTION_DAYS (15) se purani ho to skip, duplicate ho to skip.
+  3. Title me Prajapati-samaj phrase mile  -> "sure".
+     Na mile par pichle 72 ghante ki ho -> "maybe": asli article page khol kar
+     uski shuruaat (lede) me phrase dhoondhte hain; na mile to reject.
+  4. Google ka encrypted link -> asli publisher URL (googlenewsdecoder).
+  5. Page se image + short description. SSRF guard har fetch par.
+  6. DB me save (source_link unique).
+
+Cleanup (15 din se purani news delete) alag hai: main/cleanup.py.
+`run_news_job()` dono ko ek saath chalata hai — cron isi ko call karta hai.
 """
 
+import html as html_lib
 import ipaddress
 import logging
 import re
 import socket
-import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout, as_completed
-from datetime import datetime, timezone
-from urllib.parse import quote, urljoin, urlparse
+from datetime import datetime, timedelta, timezone
+from urllib.parse import urljoin, urlparse
 
 import feedparser
 import requests
 from bs4 import BeautifulSoup
 
+from . import news_sources as ns
 from .models import News
 
 try:
     from googlenewsdecoder import gnewsdecoder as _gnews_decode
 except ImportError:
-    _gnews_decode = None  # install nahi hai to decode step skip hoga
+    try:
+        from googlenewsdecoder import new_decoderv1 as _gnews_decode
+    except ImportError:
+        _gnews_decode = None  # library nahi hai -> Google link hi save hoga
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_IMAGE = ""  # blank -> template emoji placeholder dikhata hai
-
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-    ),
-    "Accept-Language": "hi-IN,hi;q=0.9,en-IN;q=0.8",
-}
-
-FEED_TIMEOUT = 8
-PAGE_TIMEOUT = 4
-MAX_PAGE_BYTES = 1_000_000
+# ── Limits ─────────────────────────────────────────────────────────────────
+FEED_TIMEOUT = 10
+PAGE_TIMEOUT = 6
+MAX_PAGE_BYTES = 1_500_000
 MAX_REDIRECTS = 3
-RECENT_DEDUPE_WINDOW = 2000  # itne latest articles ke saath dedupe check
+
+MAX_SURE_PER_RUN = 60        # ek run me max itne "sure" articles process honge
+MAX_MAYBE_PER_RUN = 20       # aur itne "maybe" (lede-check wale)
+MAYBE_WINDOW_HOURS = 72      # "maybe" sirf itne ghante tak purane articles ke liye
+TIME_BUDGET = 100.0          # seconds (decode + page fetch phase)
+
+MAX_LINK_LEN = 800           # News.source_link max_length
+MAX_IMAGE_LEN = 200          # News.image (URLField default max_length)
+MAX_DESC_LEN = 300
 
 GOOGLE_DOMAINS = ("google.com", "gstatic.com", "googleusercontent.com")
+
+FEED_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/rss+xml, application/xml, text/xml, */*",
+    "Accept-Language": "hi-IN,hi;q=0.9,en-IN;q=0.8",
+}
+PAGE_HEADERS = {
+    "User-Agent": FEED_HEADERS["User-Agent"],
+    "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+    "Accept-Language": "hi-IN,hi;q=0.9,en-IN;q=0.8",
+}
 
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 WHITESPACE_RE = re.compile(r"\s+")
 
 
-def _feed_url(query: str) -> str:
-    return f"https://news.google.com/rss/search?q={quote(query)}&hl=hi&gl=IN&ceid=IN:hi"
+# ── Small helpers ──────────────────────────────────────────────────────────
 
-
-RSS_SOURCES = [
-    {"query": "प्रजापति समाज", "category": "प्रजापति समाज", "limit": 12},
-    {"query": "कुम्हार समाज भारत", "category": "कुम्हार समाज", "limit": 12},
-    {"query": "मिट्टी कला भारत", "category": "मिट्टी कला", "limit": 10},
-    {"query": "कुम्हार मिट्टी बर्तन", "category": "मिट्टी शिल्प", "limit": 10},
-    {"query": "pottery kumhar india", "category": "मिट्टी कला", "limit": 8},
-    {"query": "प्रजापति कुम्हार उत्तर प्रदेश", "category": "प्रजापति समाज", "limit": 8},
-    # Raebareli (NGO ka home district)
-    {"query": "रायबरेली प्रजापति समाज", "category": "रायबरेली प्रजापति समाज", "limit": 12},
-    {"query": "रायबरेली कुम्हार समाज", "category": "रायबरेली कुम्हार समाज", "limit": 10},
-    {"query": "site:bhaskar.com रायबरेली प्रजापति", "category": "रायबरेली प्रजापति समाज (दैनिक भास्कर)", "limit": 10},
-    {"query": "site:bhaskar.com रायबरेली कुम्हार", "category": "रायबरेली कुम्हार समाज (दैनिक भास्कर)", "limit": 10},
-]
-
-RELEVANT_KEYWORDS = [
-    "प्रजापति", "कुम्हार", "मिट्टी", "pottery", "मटका", "दीया", "दीपक",
-    "कुलाल", "kumbhar", "kumhar", "prajapati", "मूर्ति", "शिल्प", "clay",
-    "earthen", "बर्तन", "घड़ा", "कलश", "मृदभांड",
-]
-
-
-# ── helpers ────────────────────────────────────────────────────────────────
-
-def _is_relevant(title: str, description: str) -> bool:
-    text = f"{title} {description}".lower()
-    return any(kw.lower() in text for kw in RELEVANT_KEYWORDS)
-
-
-def _clean_html(text: str) -> str:
+def _clean_html(text) -> str:
     if not text:
         return ""
-    return WHITESPACE_RE.sub(" ", HTML_TAG_RE.sub("", text)).strip()
+    text = html_lib.unescape(HTML_TAG_RE.sub("", str(text)))
+    return WHITESPACE_RE.sub(" ", text).strip()
+
+
+def _norm_title(title: str) -> str:
+    """Dedupe key: lowercase, spaces ek, aur aakhir ka ' - Akhbaar' hissa hata do."""
+    t = WHITESPACE_RE.sub(" ", (title or "")).strip().lower()
+    if " - " in t:
+        head, tail = t.rsplit(" - ", 1)
+        if head and len(tail) <= 40:
+            t = head
+    return t
 
 
 def _is_google_domain(url: str) -> bool:
     if not url:
         return False
-    host = urlparse(url).netloc.lower()
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return False
     return any(host == d or host.endswith("." + d) for d in GOOGLE_DOMAINS)
 
 
+def _https(url: str) -> str:
+    return "https://" + url[len("http://"):] if url.startswith("http://") else url
+
+
+def _parse_date(entry) -> datetime:
+    try:
+        parsed = entry.get("published_parsed")
+        if parsed:
+            return datetime(*parsed[:6], tzinfo=timezone.utc)
+    except Exception:
+        pass
+    return datetime.now(tz=timezone.utc)
+
+
+# ── SSRF-safe page fetch ───────────────────────────────────────────────────
+
 def _is_safe_url(url: str) -> bool:
-    """SSRF guard: sirf public internet ke http(s) URLs. Localhost/private/metadata IPs block."""
+    """Sirf public internet ke http(s) URLs. Localhost/private/metadata IPs block."""
     try:
         p = urlparse(url)
         if p.scheme not in ("http", "https") or not p.hostname:
@@ -114,15 +139,15 @@ def _is_safe_url(url: str) -> bool:
 
 def _safe_get(url: str):
     """
-    Redirects ko manually follow karta hai (har hop par SSRF check) aur body
-    MAX_PAGE_BYTES par cut kar deta hai. Returns (final_url, bytes) ya None.
+    Redirects manually follow karta hai (har hop par SSRF check), body ko
+    MAX_PAGE_BYTES par kaat deta hai. Returns (final_url, bytes) ya None.
     """
     for _ in range(MAX_REDIRECTS + 1):
         if not _is_safe_url(url):
             return None
         try:
             resp = requests.get(
-                url, timeout=PAGE_TIMEOUT, headers=HEADERS,
+                url, timeout=PAGE_TIMEOUT, headers=PAGE_HEADERS,
                 allow_redirects=False, stream=True,
             )
         except requests.RequestException as exc:
@@ -152,26 +177,9 @@ def _safe_get(url: str):
     return None
 
 
-def _https(url: str) -> str:
-    # Site HTTPS par hai, http images mixed-content me block ho jaati hain
-    return "https://" + url[len("http://"):] if url.startswith("http://") else url
-
-
-def _extract_rss_thumbnail(summary_html: str) -> str:
-    if not summary_html:
-        return ""
-    try:
-        img = BeautifulSoup(summary_html, "html.parser").find("img", src=True)
-        if img and img["src"].startswith("http") and not _is_google_domain(img["src"]):
-            return _https(img["src"])
-    except Exception:
-        logger.debug("RSS thumbnail parse failed", exc_info=True)
-    return ""
-
-
 def _decode_google_news_url(url: str) -> str:
-    """Google ka encrypted redirect -> asli publisher URL. Fail ho to original lautata hai."""
-    if _gnews_decode is None:
+    """Google ka encrypted link -> asli publisher URL. Fail ho to original lautata hai."""
+    if _gnews_decode is None or not _is_google_domain(url):
         return url
     try:
         result = _gnews_decode(url, interval=1)
@@ -182,159 +190,223 @@ def _decode_google_news_url(url: str) -> str:
     return url
 
 
-def _extract_image(url: str) -> str:
-    """og:image / twitter:image / pehli badi <img>. Google domain par ho to khali."""
-    fetched = _safe_get(url)
-    if not fetched:
-        return FALLBACK_IMAGE
-    final_url, body = fetched
-
-    if _is_google_domain(final_url):
-        return FALLBACK_IMAGE
-
+def _parse_page(final_url: str, body: bytes) -> dict:
+    """Page se image, description aur lede (shuruaati paragraphs)."""
+    out = {"image": "", "description": "", "lede": ""}
     try:
         soup = BeautifulSoup(body, "html.parser")
 
-        for attrs in ({"property": "og:image"}, {"name": "twitter:image"}):
+        for attrs in (
+            {"property": "og:image"},
+            {"property": "og:image:secure_url"},
+            {"name": "twitter:image"},
+            {"property": "twitter:image"},
+        ):
             tag = soup.find("meta", attrs=attrs)
             if tag and tag.get("content"):
                 candidate = urljoin(final_url, tag["content"].strip())
                 if candidate.startswith("http") and not _is_google_domain(candidate):
-                    return _https(candidate)
+                    out["image"] = _https(candidate)
+                    break
 
-        for img in soup.find_all("img", src=True):
-            src = urljoin(final_url, img["src"])
-            if not src.startswith("http") or _is_google_domain(src):
-                continue
-            try:
-                if int(str(img.get("width", "0")).replace("px", "")) >= 200:
-                    return _https(src)
-            except (ValueError, TypeError):
-                if src.lower().split("?")[0].endswith((".jpg", ".jpeg", ".png", ".webp")):
-                    return _https(src)
+        for attrs in ({"property": "og:description"}, {"name": "description"}):
+            tag = soup.find("meta", attrs=attrs)
+            if tag and tag.get("content"):
+                out["description"] = _clean_html(tag["content"])
+                break
+
+        paras = [p.get_text(" ", strip=True) for p in soup.find_all("p", limit=15)]
+        out["lede"] = " ".join(x for x in paras if x)[:1000]
     except Exception:
-        logger.debug("Image parse failed for %s", url, exc_info=True)
-
-    return FALLBACK_IMAGE
-
-
-def _parse_date(entry) -> datetime:
-    try:
-        if getattr(entry, "published_parsed", None):
-            return datetime(*entry.published_parsed[:6], tzinfo=timezone.utc)
-    except Exception:
-        pass
-    return datetime.now(tz=timezone.utc)
+        logger.debug("Page parse failed for %s", final_url, exc_info=True)
+    return out
 
 
-def _fetch_feed(source: dict):
-    """requests se timeout ke saath fetch, phir feedparser. Returns (source, entries|None)."""
-    try:
-        resp = requests.get(_feed_url(source["query"]), timeout=FEED_TIMEOUT, headers=HEADERS)
-        resp.raise_for_status()
-        feed = feedparser.parse(resp.content)
-        logger.info("RSS %s -> %d entries", source["category"], len(feed.entries))
-        return source, feed.entries[: source["limit"]]
-    except Exception as exc:
-        logger.warning("RSS fetch failed for %s: %s", source["category"], exc)
-        return source, None
+# ── Stage 1: feeds -> candidates ───────────────────────────────────────────
+
+def _fetch_feed(spec: dict):
+    """
+    Pehle 'when:15d' ke saath, khaali aaye to bina uske (Google kabhi-kabhi
+    'when:' ignore/fail karta hai). Returns (spec, entries) — dono request fail
+    hone par entries=None.
+    """
+    urls = [
+        ns.google_news_rss(f"{spec['query']} when:{ns.RETENTION_DAYS}d"),
+        ns.google_news_rss(spec["query"]),
+    ]
+    reached = False
+    for url in urls:
+        try:
+            resp = requests.get(url, timeout=FEED_TIMEOUT, headers=FEED_HEADERS)
+            resp.raise_for_status()
+            entries = feedparser.parse(resp.content).entries
+            reached = True
+        except Exception as exc:
+            logger.warning("RSS [%s] failed: %s", spec["label"], exc)
+            continue
+        if entries:
+            logger.info("RSS [%s] -> %d entries", spec["label"], len(entries))
+            return spec, list(entries)
+    return spec, ([] if reached else None)
 
 
-def _process_entry(entry, category: str, existing_links: set, seen_titles: set):
-    link = entry.get("link", "").strip()
-    title = _clean_html(entry.get("title", ""))[:300]
-    desc = _clean_html(entry.get("summary", ""))
-
-    if not link or not title:
+def _entry_to_candidate(entry, spec, cutoff, seen_titles, seen_links):
+    link = (entry.get("link") or "").strip()
+    raw_title = _clean_html(entry.get("title", ""))
+    if not link or not raw_title or len(link) > MAX_LINK_LEN:
         return None
-    # Google ke encrypted link aur decoded link alag hote hain, isliye title se bhi dedupe
-    if link in existing_links or title in seen_titles:
+
+    source = entry.get("source") or {}
+    src_title = (source.get("title") or "").strip() if hasattr(source, "get") else ""
+    title = raw_title
+    if src_title and title.endswith(" - " + src_title):
+        title = title[: -(len(src_title) + 3)].strip()
+    title = title[:300]
+    if not title:
         return None
-    if not _is_relevant(title, desc):
+
+    published = _parse_date(entry)
+    if published < cutoff:
+        return None                       # 15 din se purani -> kabhi save nahi
+    now = datetime.now(tz=timezone.utc)
+    if published > now + timedelta(hours=6):
+        published = now                   # galat future date
+
+    key = _norm_title(title)
+    if link in seen_links or key in seen_titles:
         return None
 
     return {
         "link": link,
         "title": title,
-        "desc": desc,
-        "category": category,
-        "date": _parse_date(entry),
-        "rss_thumb": _extract_rss_thumbnail(entry.get("summary", "")),
+        "title_key": key,
+        "published": published,
+        "raebareli": bool(spec.get("raebareli")),
+        "sure": ns.is_relevant(title),
     }
 
 
-# ── main entry point ───────────────────────────────────────────────────────
+# ── Stage 2: decode + page -> final item (worker thread, DB ko haath nahi) ─
 
-def fetch_news(max_workers: int = 4, max_new: int = 10, time_budget: float = 20.0) -> dict:
-    """
-    Naye relevant articles fetch + save karta hai.
+def _process_candidate(c: dict):
+    link = c["link"]
+    real_url = _decode_google_news_url(link)
+    decoded = real_url != link and not _is_google_domain(real_url)
 
-    max_new      : ek run me kitne naye articles process honge
-    time_budget  : decode/image phase ke liye seconds (cron-job.org ~30s par timeout karta hai)
+    page = {}
+    if decoded:
+        fetched = _safe_get(real_url)
+        if fetched:
+            final_url, body = fetched
+            if not _is_google_domain(final_url):
+                page = _parse_page(final_url, body)
 
-    Returns: {"added": int, "skipped": int, "errors": int}
-    """
+    text = " ".join([c["title"], page.get("description", ""), page.get("lede", "")])
+
+    if not c["sure"]:
+        # Title me phrase nahi tha: article ke lede me hona ZAROORI hai
+        if not page or not ns.is_relevant(text):
+            return None
+
+    final_link = real_url if decoded else link
+    if len(final_link) > MAX_LINK_LEN:
+        return None
+
+    image = page.get("image", "")
+    if len(image) > MAX_IMAGE_LEN:
+        image = ""                        # lamba URL DB me fail karta, emoji fallback behtar
+
+    return {
+        "link": final_link,
+        "title": c["title"],
+        "description": page.get("description", "")[:MAX_DESC_LEN],
+        "image": image,
+        "category": ns.classify(text, raebareli_hint=c["raebareli"]),
+        "published": c["published"],
+    }
+
+
+# ── Main entry points ──────────────────────────────────────────────────────
+
+def fetch_news(max_workers: int = 4, time_budget: float = TIME_BUDGET) -> dict:
+    """Returns {"added", "skipped", "errors", ...}. Kabhi crash nahi karta (feeds ke level par)."""
     stats = {"added": 0, "skipped": 0, "errors": 0}
 
-    recent = News.objects.order_by("-published_date").values_list("source_link", "title")[:RECENT_DEDUPE_WINDOW]
-    existing_links = {link for link, _ in recent}
-    seen_titles = {title[:300] for _, title in recent}
+    now = datetime.now(tz=timezone.utc)
+    cutoff = now - timedelta(days=ns.RETENTION_DAYS)
+    maybe_cutoff = now - timedelta(hours=MAYBE_WINDOW_HOURS)
 
-    # 1) Saare feeds parallel me
-    with ThreadPoolExecutor(max_workers=5) as pool:
-        feed_results = list(pool.map(_fetch_feed, RSS_SOURCES))
+    rows = list(News.objects.values_list("source_link", "title"))
+    seen_links = {link for link, _ in rows}
+    seen_titles = {_norm_title(title) for _, title in rows}
 
-    pending = []
-    for source, entries in feed_results:
+    # 1) Saari feeds parallel me
+    feeds = ns.build_feeds()
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        results = list(pool.map(_fetch_feed, feeds))
+
+    candidates = []
+    feeds_ok = 0
+    for spec, entries in results:
         if entries is None:
             stats["errors"] += 1
             continue
+        feeds_ok += 1
         for entry in entries:
-            item = _process_entry(entry, source["category"], existing_links, seen_titles)
-            if item:
-                pending.append(item)
-                existing_links.add(item["link"])
-                seen_titles.add(item["title"])
-            else:
+            cand = _entry_to_candidate(entry, spec, cutoff, seen_titles, seen_links)
+            if cand is None:
                 stats["skipped"] += 1
+                continue
+            candidates.append(cand)
+            seen_titles.add(cand["title_key"])
+            seen_links.add(cand["link"])
 
-    if not pending:
-        logger.info("fetch_news: koi naya relevant article nahi mila. %s", stats)
+    if feeds_ok == 0:
+        logger.error("fetch_news: koi bhi feed fetch nahi hui (network/block?)")
         return stats
 
-    # Sabse naye pehle, baaki agle run me
-    pending.sort(key=lambda x: x["date"], reverse=True)
-    deferred = len(pending) - max_new
-    pending = pending[:max_new]
-    logger.info("fetch_news: %d articles process ho rahe hain (%d agle run ke liye)", len(pending), max(deferred, 0))
+    def _order(c):
+        return (0 if c["raebareli"] else 1, -c["published"].timestamp())
 
-    def _with_image(item):
-        real_url = _decode_google_news_url(item["link"])
-        item["link"] = real_url
-        item["image"] = item["rss_thumb"] or _extract_image(real_url)
-        return item
+    sure = sorted((c for c in candidates if c["sure"]), key=_order)
+    maybe = sorted(
+        (c for c in candidates if not c["sure"] and c["published"] >= maybe_cutoff),
+        key=_order,
+    )
+    batch = sure[:MAX_SURE_PER_RUN] + maybe[:MAX_MAYBE_PER_RUN]
 
-    # 2) Decode + image, time budget ke andar
+    logger.info(
+        "fetch_news: feeds_ok=%d/%d, candidates=%d (sure=%d, maybe=%d), processing=%d",
+        feeds_ok, len(feeds), len(candidates), len(sure), len(maybe), len(batch),
+    )
+    if not batch:
+        return stats
+
+    # 2) Decode + page fetch (workers), DB save (is thread me)
     executor = ThreadPoolExecutor(max_workers=max_workers)
-    futures = [executor.submit(_with_image, item) for item in pending]
+    futures = [executor.submit(_process_candidate, c) for c in batch]
     try:
         for future in as_completed(futures, timeout=time_budget):
             try:
                 item = future.result()
             except Exception:
-                logger.exception("Article processing failed")
+                logger.exception("Candidate processing failed")
                 stats["errors"] += 1
+                continue
+
+            if item is None:
+                stats["skipped"] += 1
                 continue
 
             try:
                 _, created = News.objects.get_or_create(
-                    source_link=item["link"][:800],
+                    source_link=item["link"],
                     defaults={
                         "title": item["title"],
-                        "description": item["desc"],
-                        "category": item["category"],
+                        "description": item["description"],
                         "image": item["image"],
-                        "published_date": item["date"],
+                        "category": item["category"],
+                        "published_date": item["published"],
                     },
                 )
                 stats["added" if created else "skipped"] += 1
@@ -348,4 +420,23 @@ def fetch_news(max_workers: int = 4, max_new: int = 10, time_budget: float = 20.
         executor.shutdown(wait=False, cancel_futures=True)
 
     logger.info("fetch_news done — %s", stats)
+    return stats
+
+
+def run_news_job() -> dict:
+    """Cron ka kaam: fetch + 15 din se purani news delete. Dono alag-alag protected hain."""
+    from .cleanup import cleanup_old_entries
+
+    try:
+        stats = fetch_news()
+    except Exception:
+        logger.exception("run_news_job: fetch_news failed")
+        stats = {"added": 0, "skipped": 0, "errors": 1}
+
+    try:
+        stats["cleanup"] = cleanup_old_entries()
+    except Exception:
+        logger.exception("run_news_job: cleanup failed")
+        stats["cleanup"] = "failed"
+
     return stats
