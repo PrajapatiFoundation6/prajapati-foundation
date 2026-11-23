@@ -16,7 +16,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from .forms import ContactForm, DonationProofForm, StudentHelpForm, VolunteerForm
-from .models import Donation, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer,DonationProof
+from .models import Donation, FundReport, GalleryImage, GovScheme, News, SchemeUpdate, Volunteer, DonationProof
 from .ratelimit import ratelimit
 
 logger = logging.getLogger(__name__)
@@ -418,3 +418,24 @@ from django.views.decorators.cache import cache_page
 @cache_page(60 * 15)
 @cache_page(60 * 15)
 def gallery(request): ...
+FUND_REPORT_PAGE_SIZE = 12
+
+
+def fund_usage(request):
+    kind = request.GET.get("type", "").strip()
+    valid_types = {value for value, _ in FundReport.TYPE_CHOICES}
+
+    qs = FundReport.objects.filter(is_published=True)
+    if kind in valid_types:
+        qs = qs.filter(report_type=kind)
+    else:
+        kind = ""
+
+    page_obj = Paginator(qs, FUND_REPORT_PAGE_SIZE).get_page(request.GET.get("page"))
+    return render(request, "pages/fund_usage.html", {
+        "reports": page_obj,
+        "page_obj": page_obj,
+        "types": FundReport.TYPE_CHOICES,
+        "active_type": kind,
+        "extra_qs": f"&type={kind}" if kind else "",
+    })

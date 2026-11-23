@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Fund Usage | Prajapati Foundation{% endblock %}
+{% block meta_description %}<meta name="description" content="Prajapati Foundation ka fund usage aur transparency: donations kahan lagte hain, aur income-expense reports PDF me download karein.">{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/css/fund_usage.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<section class="page-hero">
+  <div class="container">
+    <span class="tag">Transparency</span>
+    <h1>Fund Usage</h1>
+    <p>Aapka har donation kahan aur kaise use hota hai — hum khula hisaab rakhte hain. Reports neeche PDF me download karein.</p>
+    <div style="margin-top:20px">
+      <a href="#reports" class="btn btn-amber">Reports Dekhein ↓</a>
+    </div>
+  </div>
+</section>
+
+<section class="fu-pillars-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">Our Promise</span>
+      <h2>Hamara Transparency Vaada</h2>
+      <p>Donors ka bharosa hamari sabse badi poonji hai.</p>
+    </div>
+
+    <div class="fu-pillars">
+      <div class="fu-pillar reveal">
+        <div class="fu-pillar-icon">🔍</div>
+        <h3>Har Donation Verify</h3>
+        <p>Har UPI donation ka screenshot aur UTR hamari team verify karti hai, tabhi use record kiya jaata hai.</p>
+      </div>
+      <div class="fu-pillar reveal">
+        <div class="fu-pillar-icon">📑</div>
+        <h3>Regular Reports</h3>
+        <p>Samay-samay par income aur kharch ki report PDF me yahin publish ki jaati hai.</p>
+      </div>
+      <div class="fu-pillar reveal">
+        <div class="fu-pillar-icon">🎯</div>
+        <h3>Sahi Jagah Upyog</h3>
+        <p>Donation sirf Education, Artisan Support, Community Help aur Emergency Relief jaise programs me lagta hai.</p>
+      </div>
+      <div class="fu-pillar reveal">
+        <div class="fu-pillar-icon">🙋</div>
+        <h3>Sawaal Poochhein</h3>
+        <p>Kisi bhi report ya kharch par sawaal ho to seedha hamse sampark karein.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="fu-flow-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">How It Works</span>
+      <h2>Donation Ka Safar</h2>
+      <p>Aapke payment se report tak — chaar simple steps.</p>
+    </div>
+
+    <div class="fu-steps">
+      <div class="fu-step reveal">
+        <span class="fu-step-num">1</span>
+        <h4>Donation Aata Hai</h4>
+        <p>Donor UPI QR se payment karke details aur screenshot bhejta hai.</p>
+      </div>
+      <div class="fu-step reveal">
+        <span class="fu-step-num">2</span>
+        <h4>Team Verify Karti Hai</h4>
+        <p>Payment bank record se match hone par hi donation verified maana jaata hai.</p>
+      </div>
+      <div class="fu-step reveal">
+        <span class="fu-step-num">3</span>
+        <h4>Program Me Upyog</h4>
+        <p>Fund zarurat ke hisaab se alag-alag programs me lagaya jaata hai.</p>
+      </div>
+      <div class="fu-step reveal">
+        <span class="fu-step-num">4</span>
+        <h4>Report Publish Hoti Hai</h4>
+        <p>Hisaab ki PDF report is page par upload hoti hai, sabke liye open.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="fu-areas-section">
+  <div class="container">
+    <div class="section-header text-center reveal">
+      <span class="tag">Impact Areas</span>
+      <h2>Fund Kahan Lagta Hai</h2>
+    </div>
+
+    <div class="fu-areas">
+      <div class="fu-area reveal">
+        <div class="fu-area-icon">🎓</div>
+        <div>
+          <h4>Education Support</h4>
+          <p>Scholarship awareness, career guidance aur needy students ki madad.</p>
+        </div>
+      </div>
+      <div class="fu-area reveal">
+        <div class="fu-area-icon">🏡</div>
+        <div>
+          <h4>Community Help</h4>
+          <p>Samaj ke zarooratmand logo ki aarthik aur samajik madad.</p>
+        </div>
+      </div>
+      <div class="fu-area reveal">
+        <div class="fu-area-icon">🧱</div>
+        <div>
+          <h4>Artisan Support</h4>
+          <p>Kumhar artisans ko tools, training aur market access.</p>
+        </div>
+      </div>
+      <div class="fu-area reveal">
+        <div class="fu-area-icon">❤️</div>
+        <div>
+          <h4>Emergency Relief</h4>
+          <p>Crisis situations mein immediate family support.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="fu-reports-section" id="reports">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="tag">Reports</span>
+      <h2>Reports &amp; Documents</h2>
+      <p>Neeche di gayi PDF reports aap dekh bhi sakte hain aur download bhi kar sakte hain.</p>
+    </div>
+
+    <div class="fu-filter">
+      <div class="fu-filter-scroll">
+        <a href="{% url 'fund_usage' %}#reports" class="fu-chip {% if not active_type %}active{% endif %}">📚 All Reports</a>
+        {% for value, label in types %}
+        <a href="{% url 'fund_usage' %}?type={{ value }}#reports" class="fu-chip {% if active_type == value %}active{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="fu-report-grid">
+      {% for r in reports %}
+      <article class="fu-report reveal">
+        <div class="fu-report-top">
+          <div class="fu-pdf-badge" aria-hidden="true">PDF</div>
+          <span class="fu-type fu-type-{{ r.report_type }}">{{ r.get_report_type_display }}</span>
+        </div>
+        <h3>{{ r.title }}</h3>
+        {% if r.period_label %}<p class="fu-period">🗓 {{ r.period_label }}</p>{% endif %}
+        {% if r.description %}<p class="fu-desc">{{ r.description|truncatewords:30 }}</p>{% endif %}
+        <div class="fu-report-foot">
+          <span class="fu-date">Updated: {{ r.report_date|date:"d M Y" }}</span>
+          {% if r.pdf %}
+          <div class="fu-actions">
+            <a href="{{ r.pdf.url }}" target="_blank" rel="noopener" class="btn btn-primary fu-btn">👁 View</a>
+            <a href="{{ r.pdf.url }}" download class="btn fu-btn fu-btn-outline">⬇ Download</a>
+          </div>
+          {% endif %}
+        </div>
+      </article>
+      {% empty %}
+      <div class="fu-empty">
+        <span class="fu-empty-icon">📄</span>
+        <p>Abhi koi report upload nahi hui hai. Pehli report jaldi yahin publish hogi.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% include 'components/pagination.html' %}
+  </div>
+</section>
+
+<section class="fu-cta-section">
+  <div class="container reveal">
+    <div class="fu-cta-card">
+      <h3>Kisi report ke baare me sawaal hai?</h3>
+      <p>Hum har sawaal ka jawab dene ke liye taiyaar hain. Hamse sampark karein ya mission ka hissa banein.</p>
+      <div class="fu-cta-actions">
+        <a href="{% url 'contact' %}" class="btn btn-ghost">Contact</a>
+        <a href="{% url 'donation' %}" class="btn btn-amber">Donate Now</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

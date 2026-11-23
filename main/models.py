@@ -1,9 +1,8 @@
 import uuid
 from pathlib import PurePath
-
+from django.utils import timezone
 from django.core.validators import FileExtensionValidator, MinValueValidator
 from django.db import models
-
 IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp']
 
 
@@ -209,3 +208,41 @@ class News(models.Model):
     def source_name(self):
         from .news_sources import publisher_name
         return publisher_name(self.source_link)
+
+
+    
+def fund_report_path(instance, filename):
+        return f"fund_reports/{uuid.uuid4().hex}{PurePath(filename).suffix.lower()}"
+
+
+MAX_PDF_SIZE = 10 * 1024 * 1024  # 10MB
+
+
+class FundReport(models.Model):
+    """Admin-uploaded transparency report (PDF) jo /fund-usage/ par dikhti hai."""
+
+    TYPE_CHOICES = [
+        ("monthly", "Monthly Report"),
+        ("quarterly", "Quarterly Report"),
+        ("annual", "Annual Report"),
+        ("audit", "Audit / Accounts"),
+        ("other", "Other"),
+    ]
+
+    title = models.CharField(max_length=200)
+    report_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default="monthly", db_index=True)
+    period_label = models.CharField(max_length=100, blank=True, default="")
+    description = models.TextField(blank=True, default="")
+    pdf = models.FileField(
+        upload_to=fund_report_path,
+        validators=[FileExtensionValidator(["pdf"])],
+    )
+    report_date = models.DateField(default=timezone.localdate)
+    is_published = models.BooleanField(default=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-report_date', '-id']
+
+    def __str__(self):
+        return self.title

@@ -7,11 +7,12 @@ PAGES = {
     "donation": 0.9,
     "about": 0.8,
     "education": 0.8,
-    "artisan_support": 0.7,
+    "artisan_support": 0.8,
     "gallery": 0.7,
     "join": 0.7,
     "contact": 0.6,
     "volunteers": 0.5,
+    "fund_usage": 0.7,
 }
 
 

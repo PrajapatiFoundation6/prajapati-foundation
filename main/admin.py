@@ -1,18 +1,24 @@
+from django import forms as dj_forms
 from django.contrib import admin, messages
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import UploadedFile
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.utils.html import format_html
+
 from .models import (
+    MAX_PDF_SIZE,
     ContactMessage,
     Donation,
+    DonationProof,
+    FundReport,
     GalleryImage,
+    GovScheme,
     News,
+    SchemeUpdate,
     StudentHelp,
     Volunteer,
-    GovScheme, SchemeUpdate,
-    DonationProof,
 )
-from .forms import BulkGalleryUploadForm
 
 
 @admin.register(GalleryImage)
@@ -46,8 +52,10 @@ class GalleryImageAdmin(admin.ModelAdmin):
 
         return render(request, "admin/main/galleryimage/bulk_upload.html", {})
 
+
 admin.site.register(StudentHelp)
 admin.site.register(ContactMessage)
+
 
 @admin.register(GovScheme)
 class GovSchemeAdmin(admin.ModelAdmin):
@@ -80,6 +88,8 @@ class VolunteerAdmin(admin.ModelAdmin):
     @admin.action(description="Mark selected volunteers as approved")
     def approve_volunteers(self, request, queryset):
         queryset.update(approved=True)
+
+
 @admin.register(DonationProof)
 class DonationProofAdmin(admin.ModelAdmin):
     list_display = ("name", "amount", "phone", "transaction_id", "status", "wants_public", "show_public", "created")
@@ -115,3 +125,31 @@ class DonationProofAdmin(admin.ModelAdmin):
     @admin.action(description="Reject karo")
     def reject(self, request, queryset):
         queryset.update(status="rejected", show_public=False)
+
+
+class FundReportAdminForm(dj_forms.ModelForm):
+    class Meta:
+        model = FundReport
+        fields = "__all__"
+
+    def clean_pdf(self):
+        pdf = self.cleaned_data.get("pdf")
+        # Sirf naya upload check hota hai (purani file ke liye storage se dobara read nahi hota)
+        if pdf and isinstance(pdf, UploadedFile):
+            if pdf.size > MAX_PDF_SIZE:
+                raise ValidationError("PDF 10MB se chhoti honi chahiye.")
+            head = pdf.read(5)
+            pdf.seek(0)
+            if head != b"%PDF-":
+                raise ValidationError("Yeh valid PDF file nahi hai.")
+        return pdf
+
+
+@admin.register(FundReport)
+class FundReportAdmin(admin.ModelAdmin):
+    form = FundReportAdminForm
+    list_display = ("title", "report_type", "period_label", "report_date", "is_published")
+    list_filter = ("report_type", "is_published")
+    list_editable = ("is_published",)
+    search_fields = ("title", "period_label", "description")
+    date_hierarchy = "report_date"
